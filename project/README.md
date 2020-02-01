@@ -16,15 +16,15 @@ https://github.com/IvanSafonov/grpc-cmake-example) but pays dividends in that ev
 derived from 'first principles' as much as possible (i.e. directly from the .proto files and 
 we don't have to lug around too many .cpp, .h files)
 
-1) sudo apt-get install build-essential autoconf libtool pkg-config automake curl 
-2) git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc
-cd grpc
-git submodule update --init
-3) cd ./third_party/protobuf
-./autogen.sh
-./configure --prefix=/opt/protobuf
-make -j `nproc`
-sudo make install
+1) sudo apt-get install build-essential autoconf libtool pkg-config automake curl \n
+2) git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc \n
+cd grpc \n
+git submodule update --init \n
+3) cd ./third_party/protobuf \n
+./autogen.sh \n
+./configure --prefix=/opt/protobuf \n
+make -j `nproc` \n
+sudo make install \n
 4) cd ../..
 make -j `nproc` PROTOC=/opt/protobuf/bin/protoc 
 sudo make prefix=/opt/grpc install
@@ -33,11 +33,12 @@ Step 4: Clone this repo into your Vagrant box under /vagrant/
 Now we have all our prerequisities installed. 
 
 Step 5: 
-1) Build it using:
-mkdir build
-cd build
-cmake ..
-make
+1) Build it using: 
+
+mkdir build \n
+cd build \n
+cmake .. \n
+make \n
 
 2) Run key-value store using ./Warble
 
