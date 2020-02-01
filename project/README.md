@@ -25,9 +25,9 @@ git submodule update --init
 ./configure --prefix=/opt/protobuf  
 make -j `nproc`  
 sudo make install  
-4) cd ../..
-make -j `nproc` PROTOC=/opt/protobuf/bin/protoc 
-sudo make prefix=/opt/grpc install
+4) cd ../..  
+make -j `nproc` PROTOC=/opt/protobuf/bin/protoc   
+sudo make prefix=/opt/grpc install  
 
 Step 4: Clone this repo into your Vagrant box under /vagrant/
 Now we have all our prerequisities installed. 
@@ -45,7 +45,7 @@ make
 Note: I took the config from this repo (https://github.com/IvanSafonov/grpc-cmake-example) which 
 I figured was okay since this is setup/config and not central to Warble or core functionalities
 
-TODO: Remove before final phase 1 submission
+TODO: Remove before final phase 1 submission  
 Progress doc: 
 1) Setup Vagrant project successfully
 2) Enabled file syncing and created a file in host OS, made sure it appeared on guest OS and 
