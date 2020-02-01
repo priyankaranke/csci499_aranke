@@ -16,6 +16,7 @@ https://github.com/IvanSafonov/grpc-cmake-example) but pays dividends in that ev
 derived from 'first principles' as much as possible (i.e. directly from the .proto files and 
 we don't have to lug around too many .cpp, .h files)
 
+0) sudo apt-get update
 1) sudo apt-get install build-essential autoconf libtool pkg-config automake curl  
 2) git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc  
 cd grpc  
