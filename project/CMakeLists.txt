@@ -15,7 +15,7 @@ find_package(Protobuf REQUIRED)
 find_package(GRPC REQUIRED)
 
 set(PROTOS
-    ${CMAKE_CURRENT_SOURCE_DIR}/protos/backend_kv_store.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/src-protos/backend_kv_store.proto
 )
 
 set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto-src)
@@ -27,7 +27,7 @@ grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
 
 # add the executable
 add_executable(Warble 
-    test_file.cxx
+    src/test_file.cxx
     ${PROTO_SRCS}
     ${GRPC_SRCS}
 )
