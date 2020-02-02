@@ -6,7 +6,8 @@ Step 1: Getting the right VM
 1) Install vagrantbox
 2) Do https://app.vagrantup.com/ubuntu/boxes/bionic64 to get the right box
 3) vagrant ssh into your new machine!
-4) Make sure it can compile .cpp files with 'sudo apt-get install g++'
+4) sudo apt-get update
+5) Make sure it can compile .cpp files with 'sudo apt-get install g++'
 
 Step 2: Get CMake as your build system using the "Install CMake through the Ubuntu Command Line" 
 found here at https://vitux.com/how-to-install-cmake-on-ubuntu-18-04/
@@ -16,35 +17,36 @@ https://github.com/IvanSafonov/grpc-cmake-example) but pays dividends in that ev
 derived from 'first principles' as much as possible (i.e. directly from the .proto files and 
 we don't have to lug around too many .cpp, .h files)
 
-1) sudo apt-get install build-essential autoconf libtool pkg-config automake curl 
-2) git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc
-cd grpc
-git submodule update --init
-3) cd ./third_party/protobuf
-./autogen.sh
-./configure --prefix=/opt/protobuf
-make -j `nproc`
-sudo make install
-4) cd ../..
-make -j `nproc` PROTOC=/opt/protobuf/bin/protoc 
-sudo make prefix=/opt/grpc install
+1) sudo apt-get install build-essential autoconf libtool pkg-config automake curl  
+2) git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc  
+cd grpc  
+git submodule update --init  
+3) cd ./third_party/protobuf  
+./autogen.sh  
+./configure --prefix=/opt/protobuf  
+make -j `nproc`  
+sudo make install  
+4) cd ../..  
+make -j `nproc` PROTOC=/opt/protobuf/bin/protoc   
+sudo make prefix=/opt/grpc install  
 
 Step 4: Clone this repo into your Vagrant box under /vagrant/
 Now we have all our prerequisities installed. 
 
 Step 5: 
-1) Build it using:
-mkdir build
-cd build
-cmake ..
-make
+1) Build it using: 
+
+mkdir build  
+cd build  
+cmake ..  
+make  
 
 2) Run key-value store using ./Warble
 
 Note: I took the config from this repo (https://github.com/IvanSafonov/grpc-cmake-example) which 
 I figured was okay since this is setup/config and not central to Warble or core functionalities
 
-TODO: Remove before final phase 1 submission
+TODO: Remove before final phase 1 submission  
 Progress doc: 
 1) Setup Vagrant project successfully
 2) Enabled file syncing and created a file in host OS, made sure it appeared on guest OS and 
