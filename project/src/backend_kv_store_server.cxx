@@ -8,20 +8,37 @@ using grpc::ServerContext;
 using grpc::Status;
 
 using kvstore::KeyValueStore;
+using kvstore::PutRequest;
+using kvstore::PutReply;
 
-// void RunServer(const std::string& db_path) {
-//   std::string server_address("0.0.0.0:50001");
-//   BackendKvStoreImpl service(db_path);
+class BackendKvStoreImpl final : public KeyValueStore::Service {
+    Status put(
+        ServerContext* context, 
+        const PutRequest* request, 
+        PutReply* reply
+    ) override {
+        std::string key = request->key();
+        std::string value = request->value();
 
-//   ServerBuilder builder;
-//   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-//   builder.RegisterService(&service);
-//   std::unique_ptr<Server> server(builder.BuildAndStart());
-//   std::cout << "Server listening on " << server_address << std::endl;
-//   server->Wait();
-// }
+        return Status::OK;
+    } 
+};
+
+void RunServer() {
+  std::string server_address("0.0.0.0:50001");
+  BackendKvStoreImpl service;
+
+  ServerBuilder builder;
+  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+  builder.RegisterService(&service);
+
+  std::unique_ptr<Server> server(builder.BuildAndStart());
+  std::cout << "Server listening on port: " << server_address << std::endl;
+
+  server->Wait();
+}
 
 int main(int argc, char** argv) {
-  std::cout << "Backend Key value store server is up" << std::endl;
+  RunServer();
   return 0;
 }
