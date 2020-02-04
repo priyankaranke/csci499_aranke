@@ -27,7 +27,7 @@ grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
 
 # add the executable
 add_executable(Warble 
-    src/test_file.cxx
+    src/backend_kv_store_server.cxx
     ${PROTO_SRCS}
     ${GRPC_SRCS}
 )
