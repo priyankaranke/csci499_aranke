@@ -23,7 +23,7 @@ cd grpc
 git submodule update --init  
 (INCLUDED IN BOOTSTRAP) 3) cd ./third_party/protobuf  
 ./autogen.sh  
-./configure --prefix=/opt/protobuf  
+./configure --prefix=/opt/protobuf 
 make -j `nproc`  
 sudo make install  
 (INCLUDED IN BOOTSTRAP) 4) cd ../..  
