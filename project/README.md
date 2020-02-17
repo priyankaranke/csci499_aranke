@@ -6,8 +6,8 @@ Step 1: Getting the right VM
 1) Install vagrantbox
 2) Do https://app.vagrantup.com/ubuntu/boxes/bionic64 to get the right box
 3) vagrant ssh into your new machine!
-4) sudo apt-get update
-5) Make sure it can compile .cpp files with 'sudo apt-get install g++'
+4) sudo apt-get update (INCLUDED IN BOOTSTRAP)
+5) Make sure it can compile .cpp files with 'sudo apt-get install g++'(INCLUDED IN BOOTSTRAP)
 
 Step 2: Get CMake as your build system using the "Install CMake through the Ubuntu Command Line" 
 found here at https://vitux.com/how-to-install-cmake-on-ubuntu-18-04/
@@ -17,21 +17,25 @@ https://github.com/IvanSafonov/grpc-cmake-example) but pays dividends in that ev
 derived from 'first principles' as much as possible (i.e. directly from the .proto files and 
 we don't have to lug around too many .cpp, .h files)
 
-1) sudo apt-get install build-essential autoconf libtool pkg-config automake curl  
-2) git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc  
+(INCLUDED IN BOOTSTRAP) 1) sudo apt-get install build-essential autoconf libtool pkg-config automake curl 
+(INCLUDED IN BOOTSTRAP) 2) git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc  
 cd grpc  
 git submodule update --init  
-3) cd ./third_party/protobuf  
+(INCLUDED IN BOOTSTRAP) 3) cd ./third_party/protobuf  
 ./autogen.sh  
-./configure --prefix=/opt/protobuf  
+./configure --prefix=/opt/protobuf 
 make -j `nproc`  
 sudo make install  
-4) cd ../..  
+(INCLUDED IN BOOTSTRAP) 4) cd ../..  
 make -j `nproc` PROTOC=/opt/protobuf/bin/protoc   
 sudo make prefix=/opt/grpc install  
 
 Step 4: Clone this repo into your Vagrant box under /vagrant/
 Now we have all our prerequisities installed. 
+
+Step 4.5:
+Googletest is handled by CMake but we need to get GLOG using:
+git clone https://github.com/google/glog.git
 
 Step 5: 
 1) Build it using: 
@@ -43,6 +47,7 @@ make
 
 2) Run key-value store using ./Warble
 
+----------------------------------------END OF SETUP---------------------------------------------
 Note: I took the config from this repo (https://github.com/IvanSafonov/grpc-cmake-example) which 
 I figured was okay since this is setup/config and not central to Warble or core functionalities
 
