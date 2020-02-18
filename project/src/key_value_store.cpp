@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include <grpc/grpc.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
@@ -27,17 +26,25 @@ using kvstore::RemoveRequest;
 using kvstore::RemoveReply;
 
 class KeyValueStoreImpl final : public KeyValueStore::Service {
-  Status put(ServerContext* context, const PutRequest* request, PutReply* response) override {
-    return Status::OK;
-  }
+ public:
+   KeyValueStoreImpl() {
+     std::unique_ptr<KeyValueStoreBackend> kv_store_backend_ { new KeyValueStoreBackend() };
+   };
 
-  Status get(ServerContext* context, ServerReaderWriter<GetReply, GetRequest>* stream) override {
-    return Status::OK;
-  }
+ private:
+   Status put(ServerContext* context, const PutRequest* request, PutReply* response) override {
+     return Status::OK;
+   }
 
-  Status remove(ServerContext* context, const RemoveRequest* request, RemoveReply* response) override {
-      return Status::OK;
-  }
+   Status get(ServerContext* context, ServerReaderWriter<GetReply, GetRequest>* stream) override {
+     return Status::OK;
+   }
+
+   Status remove(ServerContext* context, const RemoveRequest* request, RemoveReply* response) override {
+     return Status::OK;
+   }
+
+   KeyValueStoreBackend* kv_store_backend_;
 };
 
 void RunServer() {

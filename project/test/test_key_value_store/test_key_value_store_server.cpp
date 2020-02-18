@@ -1,7 +1,6 @@
 #include "test_key_value_store_server.h"
-#include "key_value_store_server.h"
 
-KeyValueStoreServerTest::KeyValueStoreServerTest() {}
+KeyValueStoreServerTest::KeyValueStoreServerTest() {};
 
 KeyValueStoreServerTest::~KeyValueStoreServerTest() {};
 
@@ -9,7 +8,37 @@ void KeyValueStoreServerTest::SetUp() {};
 
 void KeyValueStoreServerTest::TearDown() {};
 
-TEST(KeyValueStoreServerTest, TestTwo) {
-  KeyValueStoreTemp kv = KeyValueStoreTemp();
-  EXPECT_EQ(2, kv.giveMeTwo());
+// test insertion and retrieval of a key that isn't already in the map
+TEST_F(KeyValueStoreServerTest, TestPutAndGetNew) {
+  kv.put("a", "b");
+  std::vector<std::string> result = kv.get("a");
+  EXPECT_EQ(result.size(), 1); 
+  EXPECT_EQ(result.at(0), "b");
+}
+
+// test insertion and retrieval of a key that IS already in the map
+TEST_F(KeyValueStoreServerTest, TestPutAndGetExisting) {
+  kv.put("a", "b");
+  kv.put("a", "c");
+  std::vector<std::string> result = kv.get("a");
+  
+  EXPECT_EQ(result.size(), 2); 
+  EXPECT_EQ(result.at(0), "b");
+  EXPECT_EQ(result.at(1), "c");
+}
+
+// test get of a key that IS NOT in the map
+TEST_F(KeyValueStoreServerTest, TestGetNonExisting) {
+  std::vector<std::string> result = kv.get("non_existent_key");
+  EXPECT_EQ(result.size(), 0); 
+}
+
+// test removal of key that exists
+TEST_F(KeyValueStoreServerTest, TestRemoval) {
+  kv.put("a", "b");
+  kv.put("a", "c");
+  kv.remove("a");
+
+  std::vector<std::string> result = kv.get("a");
+  EXPECT_EQ(result.size(), 0); 
 }
