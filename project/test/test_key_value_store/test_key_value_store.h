@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "key_value_store_server.h"
+#include "key_value_store.h"
 
 // The fixture for testing class KeyValueStoreBackend.
 class KeyValueStoreServerTest : public ::testing::Test {

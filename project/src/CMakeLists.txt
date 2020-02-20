@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.10)
 # set the project name
 project(Warble)
 
-add_compile_options(-std=c++11)
-
 ########## HANDLE GRPC/PROTOCOL BUFFER STUFF ##########
 
 # GRPC and Protocol Buffers libraries location
@@ -31,12 +29,12 @@ grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
 
 # set Warble sources
 set(Warble_SRCS
-    key_value_store_server.cc
+    key_value_store.cpp
     ${PROTO_SRCS}
     ${GRPC_SRCS}
 )
 
-########## EXPORT key_value_store_server AS LIBRARY ##########
+########## EXPORT key_value_store AS LIBRARY ##########
 
 add_library(Warble STATIC 
     ${Warble_SRCS}
@@ -51,15 +49,15 @@ target_include_directories(Warble PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-########## ADD key_value_store AS EXECUTABLE ##########
+########## ADD key_value_store_server AS EXECUTABLE ##########
 find_package(glog 0.3.5 REQUIRED)
 
 # add the executable
-add_executable(key_value_store 
-    key_value_store.cpp
+add_executable(key_value_store_server 
+    key_value_store_server.cpp
 )
 
-target_link_libraries(key_value_store 
+target_link_libraries(key_value_store_server
     Warble
     glog::glog
 )
