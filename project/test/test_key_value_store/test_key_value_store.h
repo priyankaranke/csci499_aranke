@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
+#include "key_value_store.h"
 
-// The fixture for testing class Foo.
+// The fixture for testing class KeyValueStoreBackend.
 class KeyValueStoreServerTest : public ::testing::Test {
  protected:
    KeyValueStoreServerTest();
@@ -18,4 +19,6 @@ class KeyValueStoreServerTest : public ::testing::Test {
    // Code here will be called immediately after each test (right
    // before the destructor).
    virtual void TearDown();
+
+   KvStore kv;
 };

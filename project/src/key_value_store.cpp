@@ -1,61 +1,37 @@
 #include <iostream>
+#include "key_value_store.h"
 
-#include <grpc/grpc.h>
-#include <grpcpp/server.h>
-#include <grpcpp/server_builder.h>
-#include <grpcpp/server_context.h>
-#include <grpcpp/security/server_credentials.h>
-#include "../protos/key_value_store.grpc.pb.h"
-#include "key_value_store_server.h"
+// if we find the key, add value to vector of values (don't overwrite key->value pair)
+// otherwise just add the key->value pair like a regular map
+bool KvStore::put(const std::string &key, const std::string &value) {
+  mtx_.lock();
+  
+  if (map_.find(key) == map_.end()) {
+    std::vector<std::string> new_vector; 
+    map_[key] = new_vector;
+  } 
+  map_[key].push_back(value);
 
-#include <glog/logging.h>
-
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerReader;
-using grpc::ServerReaderWriter;
-using grpc::ServerWriter;
-using grpc::ServerContext;
-using grpc::Status;
-
-using kvstore::KeyValueStore;
-using kvstore::PutRequest;
-using kvstore::PutReply;
-using kvstore::GetRequest;
-using kvstore::GetReply;
-using kvstore::RemoveRequest;
-using kvstore::RemoveReply;
-
-class KeyValueStoreImpl final : public KeyValueStore::Service {
-  Status put(ServerContext* context, const PutRequest* request, PutReply* response) override {
-    return Status::OK;
-  }
-
-  Status get(ServerContext* context, ServerReaderWriter<GetReply, GetRequest>* stream) override {
-    return Status::OK;
-  }
-
-  Status remove(ServerContext* context, const RemoveRequest* request, RemoveReply* response) override {
-      return Status::OK;
-  }
-};
-
-void RunServer() {
-  std::string server_address("0.0.0.0:50001");
-  KeyValueStoreImpl service;
-
-  ServerBuilder builder;
-  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
-  builder.RegisterService(&service);
-  std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "Key value Store Server listening on " << server_address << std::endl;
-  server->Wait();
+  mtx_.unlock();
+  // put was successful, return 0
+  return true;
 }
 
-int main(int argc, char** argv) {
-  // Initialize Google's logging library.
-  google::InitGoogleLogging(argv[0]);
-  LOG(INFO) << "First GLOG message " << std::endl;
-  RunServer();
-  return 0;
+std::optional<std::vector<std::string>> KvStore::get(const std::string &key) {
+  mtx_.lock();
+
+  std::unordered_map<std::string, std::vector<std::string>>::const_iterator result = map_.find(key);
+  if (result != map_.end()) {
+    mtx_.unlock();
+    return result->second;
+  }
+
+  mtx_.unlock();
+  return {};
+}
+
+void KvStore::remove(const std::string &key) {
+  mtx_.lock();
+  map_.erase(key);
+  mtx_.unlock();
 }
