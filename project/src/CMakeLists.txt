@@ -49,15 +49,16 @@ target_include_directories(Warble PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-########## ADD key_value_store_server AS EXECUTABLE ##########
+########## ADD key_value_store_main AS EXECUTABLE ##########
 find_package(glog 0.3.5 REQUIRED)
 
 # add the executable
-add_executable(key_value_store_server 
+add_executable(key_value_store_main
     key_value_store_server.cpp
+    key_value_store_main.cpp
 )
 
-target_link_libraries(key_value_store_server
+target_link_libraries(key_value_store_main
     Warble
     glog::glog
 )

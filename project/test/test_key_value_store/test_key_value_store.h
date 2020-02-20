@@ -20,5 +20,5 @@ class KeyValueStoreServerTest : public ::testing::Test {
    // before the destructor).
    virtual void TearDown();
 
-   KeyValueStoreBackend kv;
+   KvStore kv;
 };
