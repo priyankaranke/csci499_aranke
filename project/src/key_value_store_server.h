@@ -29,6 +29,6 @@ class KeyValueStoreServer final : public KeyValueStore::Service {
    Status get(ServerContext* context, ServerReaderWriter<GetReply, GetRequest>* stream) override;
    Status remove(ServerContext* context, const RemoveRequest* request, RemoveReply* response) override;
 
-  private:
+ private:
    KvStore kv_store_;
 };

@@ -16,6 +16,8 @@ find_package(GRPC REQUIRED)
 
 set(PROTOS
     ${CMAKE_CURRENT_SOURCE_DIR}/../protos/key_value_store.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/../protos/func.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/../protos/warble.proto
 )
 
 set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/protos)
@@ -27,25 +29,37 @@ grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
 
 ########## DEFINITIONS FOR THIS CMAKELIST FILE ##########
 
-# set Warble sources
-set(Warble_SRCS
+# set key_value_store sources
+set(kv_SRCS
     key_value_store.cpp
+    ${PROTO_SRCS}
+    ${GRPC_SRCS}
+)
+
+# set func sources
+set(func_SRCS
+    func.cpp
+    ${PROTO_SRCS}
+    ${GRPC_SRCS}
+)
+
+set(warble_functionality_SRCS
     ${PROTO_SRCS}
     ${GRPC_SRCS}
 )
 
 ########## EXPORT key_value_store AS LIBRARY ##########
 
-add_library(Warble STATIC 
-    ${Warble_SRCS}
+add_library(key_value_store STATIC 
+    ${kv_SRCS}
 )
 
-target_link_libraries(Warble 
+target_link_libraries(key_value_store 
     gRPC::grpc++_reflection
     protobuf::libprotobuf
 )
 
-target_include_directories(Warble PUBLIC
+target_include_directories(key_value_store PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -59,6 +73,48 @@ add_executable(key_value_store_main
 )
 
 target_link_libraries(key_value_store_main
-    Warble
+    key_value_store
+    glog::glog
+)
+
+########## EXPORT func AS LIBRARY ##########
+
+add_library(func STATIC 
+    ${func_SRCS}
+)
+
+target_link_libraries(func 
+    gRPC::grpc++_reflection
+    protobuf::libprotobuf
+)
+
+target_include_directories(func PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+########## EXPORT warble_functionality AS LIBRARY ##########
+add_library(warble_functionality STATIC 
+    ${warble_functionality_SRCS}
+)
+
+target_link_libraries(warble_functionality 
+    gRPC::grpc++_reflection
+    protobuf::libprotobuf
+)
+
+target_include_directories(warble_functionality PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+########## ADD func AS EXECUTABLE ##########
+# add the executable
+add_executable(func_main
+    func_server.cpp
+    func_main.cpp
+)
+
+target_link_libraries(func_main
+    func
+    warble_functionality
     glog::glog
 )

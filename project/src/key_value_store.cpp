@@ -13,7 +13,7 @@ bool KvStore::put(const std::string &key, const std::string &value) {
   map_[key].push_back(value);
 
   mtx_.unlock();
-  // put was successful, return 0
+  // put was successful
   return true;
 }
 

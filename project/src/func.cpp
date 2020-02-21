@@ -1,0 +1,41 @@
+#include "func.h"
+
+#ifndef WARBLE_GRPC_PB_H
+#define WARBLE_GRPC_PB_H
+#include "../protos/warble.grpc.pb.h"
+#endif
+
+using warble::RegisteruserRequest;
+using warble::RegisteruserReply;
+
+Func::Func() {
+  setup();
+}
+
+void Func::setup() {
+  
+}
+
+void Func::hook(const int event_type, const std::string &event_function) {
+  function_map_[event_type] = event_function;
+}
+
+void Func::unhook(const int event_type) {
+  function_map_.erase(event_type);
+}
+
+// TODO: spawn new thread for every event call
+std::optional<std::any> Func::event(const int event_type, const std::any &payload) const {
+  std::unordered_map<int, std::string>::const_iterator result = function_map_.find(event_type);
+  
+  // no suitable function found; either event_type bogus or function was unhooked
+  // found a hooked function for the request, execute it
+  if (result == function_map_.end()) {
+    return {};
+  }
+
+  // found a hooked function for the request, execute it
+  if (result->second == "registeruserRequest") {
+
+  }
+}
