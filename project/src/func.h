@@ -1,6 +1,7 @@
 #include <any>
 #include <unordered_map>
 #include <optional>
+#include <mutex>
 
 // General purpose Function as a Service that contains  
 // logic of "func_server" to hook and unhook functions as well 
@@ -22,7 +23,15 @@ class Func {
    // and the appropriate Reply object is returned
 
    // TODO: check for valid event_type, payload pairs?
-   std::optional<std::any> event(const int event_type, const std::any &payload) const;   
+   enum EventType {
+     RegisterUser = 0;
+     Warble = 1;
+     Follow = 2;
+     Read = 3;
+     Profile = 4;
+   }
+
+   std::optional<std::any> event(const int EventType, const std::any &payload) const;   
    
  private:
    // method that hooks all the needed warble functions on initialization of Func
@@ -30,9 +39,10 @@ class Func {
    
    // map of event_type -> function to be executed for that ID
    std::unordered_map<int, std::string> function_map_;
+   std::mutex mtx_;
 
-   // TODO: Add a private KeyValueStoreServer here that Func talks to
+   // TODO: Add a private KeyValueStoreClient here that Func talks to
 
-   // Test against an instance of KvStore not KeyValueStoreServer 
+   // Test against an instance of KvStore not KeyValueStoreClient
    // (testing everything but GRPC)
 };

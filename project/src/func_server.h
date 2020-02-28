@@ -26,10 +26,17 @@ using func::EventReply;
 // Class that hooks and unhooks functions to event_types and executes them. Logic in class "func" 
 class FuncServer final : public FuncService::Service {
  public:
+
+   // specify that a certain function is to be used to process a certain event_id
    Status hook(ServerContext* context, const HookRequest* request, HookReply* response) override;
+
+   // specify that a certain function is to not longer be used to process a certain event_id
    Status unhook(ServerContext* context, const UnhookRequest* request, UnhookReply* response) override;
+
+   // process the incoming event_id based on the function previously hooked
    Status event(ServerContext* context, const EventRequest* request, EventReply* response) override;
 
  private:
+   // Func is the backend class for FuncServer
    Func func_;
 };

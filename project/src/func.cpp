@@ -17,11 +17,15 @@ void Func::setup() {
 }
 
 void Func::hook(const int event_type, const std::string &event_function) {
+  mtx_.lock();
   function_map_[event_type] = event_function;
+  mtx_.unlock();
 }
 
 void Func::unhook(const int event_type) {
+  mtx_.lock();
   function_map_.erase(event_type);
+  mtx_.unlock();
 }
 
 // TODO: spawn new thread for every event call
