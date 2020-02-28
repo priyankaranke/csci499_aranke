@@ -8,9 +8,18 @@
 // as execute hooked functions for Warble
 class Func {
  public:
+
+   enum EventType {
+     RegisterUser = 0,
+     Warble = 1,
+     Follow = 2,
+     Read = 3,
+     Profile = 4
+   };
+
    Func();
-   void hook(const int event_type, const std::string &event_function);
-   void unhook(const int event_type);
+   void hook(const EventType event_type, const std::string &event_function);
+   void unhook(const EventType event_type);
 
    // To use appropriately, for:
    // event_type 1 -> payload of type RegisterUserRequest is assumed
@@ -23,22 +32,14 @@ class Func {
    // and the appropriate Reply object is returned
 
    // TODO: check for valid event_type, payload pairs?
-   enum EventType {
-     RegisterUser = 0;
-     Warble = 1;
-     Follow = 2;
-     Read = 3;
-     Profile = 4;
-   }
-
-   std::optional<std::any> event(const int EventType, const std::any &payload) const;   
+   std::optional<std::any> event(const EventType event_type, const std::any &payload) const;   
    
  private:
    // method that hooks all the needed warble functions on initialization of Func
    void setup();
    
    // map of event_type -> function to be executed for that ID
-   std::unordered_map<int, std::string> function_map_;
+   std::unordered_map<EventType, std::string> function_map_;
    std::mutex mtx_;
 
    // TODO: Add a private KeyValueStoreClient here that Func talks to

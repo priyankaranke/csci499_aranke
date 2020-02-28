@@ -16,21 +16,21 @@ void Func::setup() {
   
 }
 
-void Func::hook(const int event_type, const std::string &event_function) {
+void Func::hook(const EventType event_type, const std::string &event_function) {
   mtx_.lock();
   function_map_[event_type] = event_function;
   mtx_.unlock();
 }
 
-void Func::unhook(const int event_type) {
+void Func::unhook(const EventType event_type) {
   mtx_.lock();
   function_map_.erase(event_type);
   mtx_.unlock();
 }
 
 // TODO: spawn new thread for every event call
-std::optional<std::any> Func::event(const int event_type, const std::any &payload) const {
-  std::unordered_map<int, std::string>::const_iterator result = function_map_.find(event_type);
+std::optional<std::any> Func::event(const EventType event_type, const std::any &payload) const {
+  std::unordered_map<EventType, std::string>::const_iterator result = function_map_.find(event_type);
   
   // no suitable function found; either event_type bogus or function was unhooked
   // found a hooked function for the request, execute it
