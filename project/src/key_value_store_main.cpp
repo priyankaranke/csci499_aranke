@@ -9,7 +9,8 @@ void RunServer() {
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
   builder.RegisterService(&service);
   std::unique_ptr<Server> server(builder.BuildAndStart());
-  std::cout << "Key value Store Server listening on " << server_address << std::endl;
+  std::cout << "Key value Store Server listening on " << server_address
+            << std::endl;
   server->Wait();
 }
 

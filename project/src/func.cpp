@@ -5,16 +5,12 @@
 #include "../protos/warble.grpc.pb.h"
 #endif
 
-using warble::RegisteruserRequest;
 using warble::RegisteruserReply;
+using warble::RegisteruserRequest;
 
-Func::Func() {
-  setup();
-}
+Func::Func() { setup(); }
 
-void Func::setup() {
-  
-}
+void Func::setup() {}
 
 void Func::hook(const EventType event_type, const std::string &event_function) {
   mtx_.lock();
@@ -29,17 +25,19 @@ void Func::unhook(const EventType event_type) {
 }
 
 // TODO: spawn new thread for every event call
-std::optional<std::any> Func::event(const EventType event_type, const std::any &payload) const {
-  std::unordered_map<EventType, std::string>::const_iterator result = function_map_.find(event_type);
-  
-  // no suitable function found; either event_type bogus or function was unhooked
-  // found a hooked function for the request, execute it
+std::unique_ptr<google::protobuf::Message> Func::event(
+    const EventType event_type, const std::any &payload) const {
+  std::unordered_map<EventType, std::string>::const_iterator result =
+      function_map_.find(event_type);
+
+  // no suitable function found; either event_type bogus or function was
+  // unhooked found a hooked function for the request, execute it
   if (result == function_map_.end()) {
-    return {};
+    return nullptr;
   }
 
   // found a hooked function for the request, execute it
-  if (result->second == "registeruserRequest") {
-
-  }
+  // TODO: add specific functionality for each event
+  // if (result->second == "registeruserRequest") {
+  // }
 }
