@@ -2,11 +2,6 @@
 
 #include "func.h"
 
-#ifndef WARBLE_GRPC_PB_H
-#define WARBLE_GRPC_PB_H
-#include "warble.grpc.pb.h"
-#endif
-
 using warble::FollowReply;
 using warble::FollowRequest;
 using warble::ProfileReply;
@@ -140,27 +135,28 @@ std::unique_ptr<google::protobuf::Any> Func::event(
 
     WarbleReply reply = buildWarbleReplyFromRequest(request, latest_warble_id);
     std::string warble_string;
-    kv_client_.put(kWarble + latest_warble_id,
-                   reply.warble().SerializeToString(&warble_string));
+    reply.warble().SerializeToString(&warble_string);
+    kv_client_.put(kWarble + std::to_string(latest_warble_id), warble_string);
 
     latest_warble_id++;
+
+    auto any = std::make_unique<google::protobuf::Any>();
+    any->PackFrom(reply);
+    return any;
   }
 }
 
-WarbleReply buildWarbleReplyFromRequest(WarbleRequest &request, int id) {
+WarbleReply Func::buildWarbleReplyFromRequest(WarbleRequest &request, int id) {
   WarbleReply reply;
-  Warble warble;
   timeval tv;
   gettimeofday(&tv, 0);
 
-  warble.set_username(request.username());
-  warble.set_text(request.text());
-  warble.set_parent_id(request.parent_id());
-  warble.set_id(id);
-  warble.set_timestamp().set_seconds(tv.tv_sec);
-  warble.set_timestamp().set_useconds(tv.tv_usec);
-
-  reply.set_warble(warble);
+  reply.mutable_warble()->set_username(request.username());
+  reply.mutable_warble()->set_text(request.text());
+  reply.mutable_warble()->set_parent_id(request.parent_id());
+  reply.mutable_warble()->set_id(std::to_string(id));
+  reply.mutable_warble()->mutable_timestamp()->set_seconds(tv.tv_sec);
+  reply.mutable_warble()->mutable_timestamp()->set_useconds(tv.tv_usec);
 
   return reply;
 }

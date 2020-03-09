@@ -2,6 +2,10 @@
 #include <mutex>
 #include <unordered_map>
 
+#ifndef WARBLE_GRPC_PB_H
+#define WARBLE_GRPC_PB_H
+#include "warble.grpc.pb.h"
+#endif
 #include "key_value_store_client.h"
 
 // port Func's KeyValueStoreClient should connect to (where KeyValueStoreServer
@@ -45,4 +49,7 @@ class Func {
   std::mutex mtx_;
 
   KeyValueStoreClient kv_client_;
+
+  warble::WarbleReply buildWarbleReplyFromRequest(
+      warble::WarbleRequest &request, int id);
 };

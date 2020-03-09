@@ -1,3 +1,5 @@
+#include <time.h>
+
 #include "func_client.h"
 #include "warble.grpc.pb.h"
 
@@ -29,8 +31,8 @@ void registeruser(const std::string& username, FuncClient& func_client,
                   int event_type);
 void follow(const std::string& username, const std::string& to_follow,
             FuncClient& func_client, int event_type);
-void warble(const std::string& username, std::string& text, int parent_id,
-            FuncClient func_client, int event_type);
+void warblePost(const std::string& username, const std::string& text,
+                int parent_id, FuncClient& func_client, int event_type);
 
 void prettyPrintWarble(WarbleReply warble_reply);
 
@@ -61,6 +63,9 @@ int main(int argc, char** argv) {
   profile("darth", func_client, kProfileId);
   profile("tristan", func_client, kProfileId);
 
+  warblePost("priyank", "priyank's first warble", -1, func_client, kWarbleId);
+  warblePost("barath", "barath's now on warble", -1, func_client, kWarbleId);
+
   return 0;
 }
 
@@ -69,6 +74,9 @@ void setup(FuncClient& func_client,
   for (auto it : function_map) {
     func_client.hook(it.first, it.second);
   }
+  // set Timezone for environment
+  setenv("TZ", "PST8PDT", 1);
+  tzset();
 }
 
 void follow(const std::string& username, const std::string& to_follow,
@@ -114,14 +122,14 @@ void profile(const std::string& username, FuncClient& func_client,
   std::cout << std::endl;
 }
 
-void warble(const std::string& username, std::string& text, int parent_id,
-            FuncClient func_client, int event_type) {
+void warblePost(const std::string& username, const std::string& text,
+                int parent_id, FuncClient& func_client, int event_type) {
   auto* any = new google::protobuf::Any();
 
   WarbleRequest request;
   request.set_username(username);
   request.set_text(text);
-  request.set_parent_id(parent_id);
+  request.set_parent_id(std::to_string(parent_id));
   any->PackFrom(request);
 
   EventReply event_reply = func_client.event(event_type, *any);
@@ -133,6 +141,18 @@ void warble(const std::string& username, std::string& text, int parent_id,
 
 void prettyPrintWarble(WarbleReply warble_reply) {
   Warble warble = warble_reply.warble();
-  std::cout << warble.username() << ": " << warble.text() << " ("
-            << warble.timestamp().seconds() << ")" << std::endl;
+
+  // Get time
+  struct tm* tm;
+  time_t t;
+
+  long seconds = warble.timestamp().seconds();
+  tm = localtime(&seconds);
+  char time_buf[30];
+  strftime(time_buf, 30, "%Y:%m:%d %H:%M:%S", tm);
+
+  // Print warble info
+  std::cout << warble.username() << ": " << warble.text() << " (";
+  printf("%s", time_buf);
+  std::cout << ")" << std::endl;
 }
