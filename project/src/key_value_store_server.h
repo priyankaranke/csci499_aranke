@@ -4,7 +4,7 @@
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
-#include "../protos/key_value_store.grpc.pb.h"
+#include "key_value_store.grpc.pb.h"
 #include "key_value_store.h"
 
 using grpc::Server;

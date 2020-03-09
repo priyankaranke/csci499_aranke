@@ -4,7 +4,7 @@
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
-#include "../protos/func.grpc.pb.h"
+#include "func.grpc.pb.h"
 #include "func.h"
 
 using grpc::Server;

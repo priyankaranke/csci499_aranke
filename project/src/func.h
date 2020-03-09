@@ -1,8 +1,12 @@
-#include <google/protobuf/message.h>
-#include <any>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+
+#include "key_value_store_client.h"
+
+// port Func's KeyValueStoreClient should connect to (where KeyValueStoreServer
+// is listening on)
+const std::string KV_CLIENT_PORT = "0.0.0.0:50001";
 
 // General purpose Function as a Service that contains
 // logic of "func_server" to hook and unhook functions as well
@@ -18,8 +22,8 @@ class Func {
   };
 
   Func();
-  void hook(const EventType event_type, const std::string &event_function);
-  void unhook(const EventType event_type);
+  void hook(const EventType &event_type, const std::string &event_function);
+  void unhook(const EventType &event_type);
 
   // To use appropriately, for:
   // event_type 1 -> payload of type RegisterUserRequest is assumed
@@ -32,19 +36,13 @@ class Func {
   // and the appropriate Reply object is returned
 
   // TODO: check for valid event_type, payload pairs?
-  std::unique_ptr<google::protobuf::Message> event(
-      const EventType event_type, const std::any &payload) const;
+  std::unique_ptr<google::protobuf::Any> event(
+      const EventType event_type, const google::protobuf::Any &payload);
 
  private:
-  // method that hooks all the needed warble functions on initialization of Func
-  void setup();
-
   // map of event_type -> function to be executed for that ID
   std::unordered_map<EventType, std::string> function_map_;
   std::mutex mtx_;
 
-  // TODO: Add a private KeyValueStoreClient here that Func talks to
-
-  // Test against an instance of KvStore not KeyValueStoreClient
-  // (testing everything but GRPC)
+  KeyValueStoreClient kv_client_;
 };

@@ -36,6 +36,13 @@ set(kv_SRCS
     ${GRPC_SRCS}
 )
 
+# set key_value_store_client sources
+set(kv_client_SRCS
+    key_value_store_client.cpp
+    ${PROTO_SRCS}
+    ${GRPC_SRCS}
+)
+
 # set func sources
 set(func_SRCS
     func.cpp
@@ -44,6 +51,12 @@ set(func_SRCS
 )
 
 set(warble_functionality_SRCS
+    ${PROTO_SRCS}
+    ${GRPC_SRCS}
+)
+
+set(func_client_SRCS
+    func_client.cpp
     ${PROTO_SRCS}
     ${GRPC_SRCS}
 )
@@ -77,6 +90,18 @@ target_link_libraries(key_value_store_main
     glog::glog
 )
 
+########## EXPORT key_value_store_client AS LIBRARY ##########
+
+add_library(key_value_store_client STATIC 
+    ${kv_client_SRCS}
+)   
+
+target_link_libraries(key_value_store_client 
+    gRPC::grpc++_reflection
+    protobuf::libprotobuf
+    glog::glog
+)
+
 ########## EXPORT func AS LIBRARY ##########
 
 add_library(func STATIC 
@@ -86,6 +111,7 @@ add_library(func STATIC
 target_link_libraries(func 
     gRPC::grpc++_reflection
     protobuf::libprotobuf
+    key_value_store_client
 )
 
 target_include_directories(func PUBLIC
@@ -117,4 +143,26 @@ target_link_libraries(func_main
     func
     warble_functionality
     glog::glog
+)
+
+########## EXPORT func_client AS LIBRARY ##########
+
+add_library(func_client STATIC 
+    ${func_client_SRCS}
+)   
+
+target_link_libraries(func_client 
+    gRPC::grpc++_reflection
+    protobuf::libprotobuf
+    glog::glog
+)
+
+########## ADD warble_main AS EXECUTABLE ##########
+# add the executable
+add_executable(warble_main
+    warble_main.cpp
+)
+
+target_link_libraries(warble_main
+    func_client
 )
