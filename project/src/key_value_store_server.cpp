@@ -2,7 +2,6 @@
 
 Status KeyValueStoreServer::put(ServerContext* context,
                                 const PutRequest* request, PutReply* response) {
-  std::cout << "put method entered for KeyValueStoreServer" << std::endl;
   bool put_success = kv_store_.put(request->key(), request->value());
   if (put_success) {
     return Status::OK;
@@ -14,7 +13,6 @@ Status KeyValueStoreServer::put(ServerContext* context,
 Status KeyValueStoreServer::get(
     ServerContext* context, ServerReaderWriter<GetReply, GetRequest>* stream) {
   GetRequest request;
-  std::cout << "Key_value_store_server receives key " << std::endl;
   while (stream->Read(&request)) {
     std::optional<std::vector<std::string>> response =
         kv_store_.get(request.key());

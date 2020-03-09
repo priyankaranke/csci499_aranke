@@ -1,3 +1,5 @@
+#include <sys/time.h>
+
 #include "func.h"
 
 #ifndef WARBLE_GRPC_PB_H
@@ -5,15 +7,24 @@
 #include "warble.grpc.pb.h"
 #endif
 
+using warble::FollowReply;
+using warble::FollowRequest;
 using warble::ProfileReply;
 using warble::ProfileRequest;
 using warble::RegisteruserReply;
 using warble::RegisteruserRequest;
+using warble::Timestamp;
+using warble::Warble;
+using warble::WarbleReply;
+using warble::WarbleRequest;
 
 // Identifiers that specify which string is prepended to the key before adding
 // to key value store
 const std::string kUserFollowing = "user_following:";
 const std::string kUserFollower = "user_follower:";
+const std::string kWarble = "warble:";
+
+int latest_warble_id = 0;
 
 Func::Func()
     : kv_client_(grpc::CreateChannel(KV_CLIENT_PORT,
@@ -86,13 +97,17 @@ std::unique_ptr<google::protobuf::Any> Func::event(
 
     ProfileReply reply;
     for (GetReply get_reply : user_follower) {
-      std::cout << "Adding to follower " << get_reply.value() << std::endl;
-      reply.add_followers(get_reply.value());
+      if (get_reply.value() != "") {
+        std::cout << "Adding to follower " << get_reply.value() << std::endl;
+        reply.add_followers(get_reply.value());
+      }
     }
 
     for (GetReply get_reply : user_following) {
-      std::cout << "Adding to following " << get_reply.value() << std::endl;
-      reply.add_following(get_reply.value());
+      if (get_reply.value() != "") {
+        std::cout << "Adding to following " << get_reply.value() << std::endl;
+        reply.add_following(get_reply.value());
+      }
     }
 
     auto any_other = std::make_unique<google::protobuf::Any>();
@@ -106,10 +121,46 @@ std::unique_ptr<google::protobuf::Any> Func::event(
     FollowRequest request;
     payload.UnpackTo(&request);
 
-    kv_client_.put(request.to_follow());
+    // if (A) is to follow (B)
+    // in the 'UserFollowing' subtable add A to the followers of B
+    kv_client_.put(kUserFollowing + request.username(), request.to_follow());
+    // in the 'UserFollower' subtable, add B to the followers of A
+    kv_client_.put(kUserFollower + request.to_follow(), request.username());
+
     FollowReply response;
     auto any = std::make_unique<google::protobuf::Any>();
     any->PackFrom(response);
     return any;
   }
+
+  if (result->second == "warble") {
+    std::cout << "Talking to kv_client_ regarding warbleRequest" << std::endl;
+    WarbleRequest request;
+    payload.UnpackTo(&request);
+
+    WarbleReply reply = buildWarbleReplyFromRequest(request, latest_warble_id);
+    std::string warble_string;
+    kv_client_.put(kWarble + latest_warble_id,
+                   reply.warble().SerializeToString(&warble_string));
+
+    latest_warble_id++;
+  }
+}
+
+WarbleReply buildWarbleReplyFromRequest(WarbleRequest &request, int id) {
+  WarbleReply reply;
+  Warble warble;
+  timeval tv;
+  gettimeofday(&tv, 0);
+
+  warble.set_username(request.username());
+  warble.set_text(request.text());
+  warble.set_parent_id(request.parent_id());
+  warble.set_id(id);
+  warble.set_timestamp().set_seconds(tv.tv_sec);
+  warble.set_timestamp().set_useconds(tv.tv_usec);
+
+  reply.set_warble(warble);
+
+  return reply;
 }

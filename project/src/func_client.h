@@ -18,6 +18,8 @@ using func::UnhookRequest;
 class FuncClient {
  public:
   FuncClient() = delete;
+  FuncClient(const FuncClient &) = delete;
+
   FuncClient(std::shared_ptr<Channel> channel);
   void hook(const int event_type, const std::string &event_function);
   void unhook(const int event_type);

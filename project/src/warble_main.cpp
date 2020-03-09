@@ -1,63 +1,104 @@
 #include "func_client.h"
 #include "warble.grpc.pb.h"
 
+using warble::FollowReply;
+using warble::FollowRequest;
 using warble::ProfileReply;
 using warble::ProfileRequest;
 using warble::RegisteruserReply;
 using warble::RegisteruserRequest;
+using warble::Warble;
+using warble::WarbleReply;
+using warble::WarbleRequest;
 
-const std::string FUNC_CLIENT_PORT = "localhost:50000";
+const std::string kFuncClientPort = "localhost:50000";
+const int kRegisteruserId = 1;
+const int kWarbleId = 2;
+const int kFollowId = 3;
+const int kReadId = 4;
+const int kProfileId = 5;
 
 // method that hooks all the needed warble functions on initialization of
 // FuncClient
-void setup();
+void setup(FuncClient& func_client,
+           const std::unordered_map<int, std::string>& function_map);
+
+void profile(const std::string& username, FuncClient& func_client,
+             int event_type);
+void registeruser(const std::string& username, FuncClient& func_client,
+                  int event_type);
+void follow(const std::string& username, const std::string& to_follow,
+            FuncClient& func_client, int event_type);
+void warble(const std::string& username, std::string& text, int parent_id,
+            FuncClient func_client, int event_type);
+
+void prettyPrintWarble(WarbleReply warble_reply);
 
 // Here is where the user's command line inputs will be interpreted
-// and executed. This holds a FuncClient which talks to FuncServer
+// and executed. Holds a FuncClient which talks to FuncServer
 int main(int argc, char** argv) {
-  FuncClient func_client(grpc::CreateChannel(
-      FUNC_CLIENT_PORT, grpc::InsecureChannelCredentials()));
+  FuncClient func_client(
+      grpc::CreateChannel(kFuncClientPort, grpc::InsecureChannelCredentials()));
 
-  // REGISTERUSER
-  auto* any = new google::protobuf::Any();
-  int sample_event_type = 0;
-  std::string sample_event_function = "registeruser";
-  func_client.hook(sample_event_type, sample_event_function);
+  // if we need to expose hook requests to warble, we can simply add them to
+  // function_map as they come in
+  std::unordered_map<int, std::string> function_map(
+      {{kRegisteruserId, "registeruser"},
+       {kWarbleId, "warble"},
+       {kFollowId, "follow"},
+       {kReadId, "read"},
+       {kProfileId, "profile"}});
 
-  RegisteruserRequest rur;
-  rur.set_username("priyank");
-  any->PackFrom(rur);
-  EventReply event_reply = func_client.event(sample_event_type, *any);
+  setup(func_client, function_map);
+  registeruser("priyank", func_client, kRegisteruserId);
+  follow("priyank", "barath", func_client, kFollowId);
+  follow("darth", "priyank", func_client, kFollowId);
+  follow("barath", "darth", func_client, kFollowId);
+  follow("tristan", "barath", func_client, kFollowId);
 
-  // TEST RUNNING UNHOOKED FUNCTION
-  auto* diff = new google::protobuf::Any();
-  func_client.unhook(sample_event_type);
-  event_reply = func_client.event(sample_event_type, *diff);
+  profile("priyank", func_client, kProfileId);
+  profile("barath", func_client, kProfileId);
+  profile("darth", func_client, kProfileId);
+  profile("tristan", func_client, kProfileId);
 
-  // FOLLOW
+  return 0;
+}
+
+void setup(FuncClient& func_client,
+           const std::unordered_map<int, std::string>& function_map) {
+  for (auto it : function_map) {
+    func_client.hook(it.first, it.second);
+  }
+}
+
+void follow(const std::string& username, const std::string& to_follow,
+            FuncClient& func_client, int event_type) {
   auto* sec_diff = new google::protobuf::Any();
-  sample_event_type = 3;
-  sample_event_function = "follow";
-  func_client.hook(sample_event_type, sample_event_function);
-
   FollowRequest fr;
-  fr.set_username("priyank");
-  fr.to_follow("barath");
+  fr.set_username(username);
+  fr.set_to_follow(to_follow);
   sec_diff->PackFrom(fr);
-  EventReply follow_event_reply =
-      func_client.event(sample_event_type, *sec_diff);
+  EventReply follow_event_reply = func_client.event(event_type, *sec_diff);
+}
 
-  // PROFILEREQUEST
+void registeruser(const std::string& username, FuncClient& func_client,
+                  int event_type) {
+  auto* any = new google::protobuf::Any();
+  RegisteruserRequest rur;
+  rur.set_username(username);
+  any->PackFrom(rur);
+  EventReply event_reply = func_client.event(event_type, *any);
+}
+
+void profile(const std::string& username, FuncClient& func_client,
+             int event_type) {
   auto* any_other = new google::protobuf::Any();
-  sample_event_type = 5;
-  sample_event_function = "profile";
-  func_client.hook(sample_event_type, sample_event_function);
 
   ProfileRequest pr;
-  pr.set_username("priyank");
+  pr.set_username(username);
   any_other->PackFrom(pr);
-  EventReply other_event_reply =
-      func_client.event(sample_event_type, *any_other);
+
+  EventReply other_event_reply = func_client.event(event_type, *any_other);
   ProfileReply profile_reply;
   other_event_reply.payload().UnpackTo(&profile_reply);
 
@@ -70,8 +111,28 @@ int main(int argc, char** argv) {
   for (const std::string& f : profile_reply.following()) {
     std::cout << f << std::endl;
   }
-
-  return 0;
+  std::cout << std::endl;
 }
 
-void setup() {}
+void warble(const std::string& username, std::string& text, int parent_id,
+            FuncClient func_client, int event_type) {
+  auto* any = new google::protobuf::Any();
+
+  WarbleRequest request;
+  request.set_username(username);
+  request.set_text(text);
+  request.set_parent_id(parent_id);
+  any->PackFrom(request);
+
+  EventReply event_reply = func_client.event(event_type, *any);
+  WarbleReply reply;
+  event_reply.payload().UnpackTo(&reply);
+
+  prettyPrintWarble(reply);
+}
+
+void prettyPrintWarble(WarbleReply warble_reply) {
+  Warble warble = warble_reply.warble();
+  std::cout << warble.username() << ": " << warble.text() << " ("
+            << warble.timestamp().seconds() << ")" << std::endl;
+}
