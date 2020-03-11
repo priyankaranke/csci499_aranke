@@ -15,6 +15,14 @@ using func::HookRequest;
 using func::UnhookReply;
 using func::UnhookRequest;
 
+namespace function_constants {
+const int kRegisteruserId = 1;
+const int kWarbleId = 2;
+const int kFollowId = 3;
+const int kReadId = 4;
+const int kProfileId = 5;
+}  // namespace function_constants
+
 class FuncClient {
  public:
   FuncClient() = delete;

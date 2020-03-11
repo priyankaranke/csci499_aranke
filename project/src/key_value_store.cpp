@@ -11,7 +11,6 @@ bool KvStore::put(const std::string &key, const std::string &value) {
     map_[key] = new_vector;
   }
   map_[key].push_back(value);
-  std::cout << "Put key: " << key << " to value: " << value << std::endl;
   mtx_.unlock();
   // put was successful
   return true;

@@ -7,18 +7,21 @@ using warble::FollowReply;
 using warble::FollowRequest;
 using warble::ProfileReply;
 using warble::ProfileRequest;
+using warble::ReadReply;
+using warble::ReadRequest;
 using warble::RegisteruserReply;
 using warble::RegisteruserRequest;
 using warble::Warble;
 using warble::WarbleReply;
 using warble::WarbleRequest;
 
+using function_constants::kFollowId;
+using function_constants::kProfileId;
+using function_constants::kReadId;
+using function_constants::kRegisteruserId;
+using function_constants::kWarbleId;
+
 const std::string kFuncClientPort = "localhost:50000";
-const int kRegisteruserId = 1;
-const int kWarbleId = 2;
-const int kFollowId = 3;
-const int kReadId = 4;
-const int kProfileId = 5;
 
 // method that hooks all the needed warble functions on initialization of
 // FuncClient
@@ -27,14 +30,15 @@ void setup(FuncClient& func_client,
 
 void profile(const std::string& username, FuncClient& func_client,
              int event_type);
-void registeruser(const std::string& username, FuncClient& func_client,
-                  int event_type);
+RegisteruserReply registeruser(const std::string& username,
+                               FuncClient& func_client, int event_type);
 void follow(const std::string& username, const std::string& to_follow,
             FuncClient& func_client, int event_type);
 void warblePost(const std::string& username, const std::string& text,
                 int parent_id, FuncClient& func_client, int event_type);
+void read(int warble_id, FuncClient& func_client, int event_type);
 
-void prettyPrintWarble(WarbleReply warble_reply);
+void prettyPrintWarble(Warble warble);
 
 // Here is where the user's command line inputs will be interpreted
 // and executed. Holds a FuncClient which talks to FuncServer
@@ -62,10 +66,17 @@ int main(int argc, char** argv) {
   profile("barath", func_client, kProfileId);
   profile("darth", func_client, kProfileId);
   profile("tristan", func_client, kProfileId);
+  profile("nonexist", func_client, kProfileId);
 
   warblePost("priyank", "priyank's first warble", -1, func_client, kWarbleId);
-  warblePost("barath", "barath's now on warble", -1, func_client, kWarbleId);
+  warblePost("barath", "barath's now on warble", 2, func_client, kWarbleId);
+  warblePost("darth", "darth's reply to priyank", 0, func_client, kWarbleId);
+  warblePost("priyank", "priyank responds to barath!", 2, func_client,
+             kWarbleId);
 
+  read(1, func_client, kReadId);
+  read(0, func_client, kReadId);
+  read(2, func_client, kReadId);
   return 0;
 }
 
@@ -74,39 +85,59 @@ void setup(FuncClient& func_client,
   for (auto it : function_map) {
     func_client.hook(it.first, it.second);
   }
-  // set Timezone for environment
-  setenv("TZ", "PST8PDT", 1);
-  tzset();
+}
+
+RegisteruserReply registeruser(const std::string& username,
+                               FuncClient& func_client, int event_type) {
+  // no need to explicitly delete since we use set_allocated in func_client
+  // which takes ownership of the pointer and deletes it when the message is
+  // destroyed (https://stackoverflow.com/a/43195097)
+  auto* any = new google::protobuf::Any();
+  RegisteruserRequest request;
+  request.set_username(username);
+  any->PackFrom(request);
+
+  EventReply event_reply = func_client.event(event_type, *any);
+  RegisteruserReply response;
+
+  return response;
 }
 
 void follow(const std::string& username, const std::string& to_follow,
             FuncClient& func_client, int event_type) {
-  auto* sec_diff = new google::protobuf::Any();
+  auto* any = new google::protobuf::Any();
   FollowRequest fr;
   fr.set_username(username);
   fr.set_to_follow(to_follow);
-  sec_diff->PackFrom(fr);
-  EventReply follow_event_reply = func_client.event(event_type, *sec_diff);
+  any->PackFrom(fr);
+  EventReply follow_event_reply = func_client.event(event_type, *any);
 }
 
-void registeruser(const std::string& username, FuncClient& func_client,
-                  int event_type) {
+void read(int warble_id, FuncClient& func_client, int event_type) {
   auto* any = new google::protobuf::Any();
-  RegisteruserRequest rur;
-  rur.set_username(username);
-  any->PackFrom(rur);
+  ReadRequest request;
+  request.set_warble_id(std::to_string(warble_id));
+  any->PackFrom(request);
+
   EventReply event_reply = func_client.event(event_type, *any);
+  ReadReply warble_reply;
+  event_reply.payload().UnpackTo(&warble_reply);
+
+  // Print all of its children
+  for (const Warble& warble : warble_reply.warbles()) {
+    prettyPrintWarble(warble);
+  }
 }
 
 void profile(const std::string& username, FuncClient& func_client,
              int event_type) {
-  auto* any_other = new google::protobuf::Any();
+  auto* any = new google::protobuf::Any();
 
   ProfileRequest pr;
   pr.set_username(username);
-  any_other->PackFrom(pr);
+  any->PackFrom(pr);
 
-  EventReply other_event_reply = func_client.event(event_type, *any_other);
+  EventReply other_event_reply = func_client.event(event_type, *any);
   ProfileReply profile_reply;
   other_event_reply.payload().UnpackTo(&profile_reply);
 
@@ -136,12 +167,10 @@ void warblePost(const std::string& username, const std::string& text,
   WarbleReply reply;
   event_reply.payload().UnpackTo(&reply);
 
-  prettyPrintWarble(reply);
+  prettyPrintWarble(reply.warble());
 }
 
-void prettyPrintWarble(WarbleReply warble_reply) {
-  Warble warble = warble_reply.warble();
-
+void prettyPrintWarble(Warble warble) {
   // Get time
   struct tm* tm;
   time_t t;
@@ -152,7 +181,8 @@ void prettyPrintWarble(WarbleReply warble_reply) {
   strftime(time_buf, 30, "%Y:%m:%d %H:%M:%S", tm);
 
   // Print warble info
-  std::cout << warble.username() << ": " << warble.text() << " (";
+  std::cout << warble.id() << " " << warble.username() << ": " << warble.text()
+            << " (";
   printf("%s", time_buf);
   std::cout << ")" << std::endl;
 }

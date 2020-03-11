@@ -6,6 +6,8 @@ using warble::FollowReply;
 using warble::FollowRequest;
 using warble::ProfileReply;
 using warble::ProfileRequest;
+using warble::ReadReply;
+using warble::ReadRequest;
 using warble::RegisteruserReply;
 using warble::RegisteruserRequest;
 using warble::Timestamp;
@@ -17,8 +19,10 @@ using warble::WarbleRequest;
 // to key value store
 const std::string kUserFollowing = "user_following:";
 const std::string kUserFollower = "user_follower:";
-const std::string kWarble = "warble:";
+const std::string kWarblePost = "warble_post:";
+const std::string kWarbleChildren = "warble_children:";
 
+// keeps track of id of warbles posted
 int latest_warble_id = 0;
 
 Func::Func()
@@ -42,77 +46,53 @@ void Func::unhook(const EventType &event_type) {
 }
 
 // // TODO: spawn new thread for every event call
-std::unique_ptr<google::protobuf::Any> Func::event(
-    const EventType event_type, const google::protobuf::Any &payload) {
-  std::cout << " reached FUNC's event call successfully " << std::endl;
-  std::cout << " Event_type is: " << event_type << std::endl;
-
+google::protobuf::Any *Func::event(const EventType event_type,
+                                   google::protobuf::Any payload) {
   std::unordered_map<EventType, std::string>::const_iterator result =
       function_map_.find(event_type);
 
   // no suitable function found; either event_type bogus or function was
   // unhooked or function not hooked to event_type yet
   if (result == function_map_.end()) {
-    std::cout << "Couldn't find hooked function" << std::endl;
-    return {};
+    return nullptr;
   }
 
   // found a hooked function for the request, execute it
   if (result->second == "registeruser") {
-    std::cout << "Talking to kv_client_ regarding registeruserRequest"
-              << std::endl;
-
     // Create the request
     RegisteruserRequest request;
     payload.UnpackTo(&request);
     std::string user_follower_entry = kUserFollower + request.username();
     std::string user_following_entry = kUserFollowing + request.username();
 
-    // Put it into KVStore (registeruserRequest doesn't put followers or
-    // following) into both user_follower and user_following subtables
+    // Put it into kv store into both user_follower and user_following subtables
     kv_client_.put(user_follower_entry, "");
     kv_client_.put(user_following_entry, "");
 
+    // Pack in response
     RegisteruserReply response;
-    auto any = std::make_unique<google::protobuf::Any>();
+    auto *any = new google::protobuf::Any();
     any->PackFrom(response);
     return any;
   }
 
   if (result->second == "profile") {
-    std::cout << "Talking to kv_client_ regarding profileRequest" << std::endl;
-
     // Create the request
     ProfileRequest request;
     payload.UnpackTo(&request);
+
+    // Get the profile info from kv store
     std::vector<GetReply> user_follower =
         kv_client_.get(kUserFollower + request.username());
     std::vector<GetReply> user_following =
         kv_client_.get(kUserFollowing + request.username());
 
-    ProfileReply reply;
-    for (GetReply get_reply : user_follower) {
-      if (get_reply.value() != "") {
-        std::cout << "Adding to follower " << get_reply.value() << std::endl;
-        reply.add_followers(get_reply.value());
-      }
-    }
-
-    for (GetReply get_reply : user_following) {
-      if (get_reply.value() != "") {
-        std::cout << "Adding to following " << get_reply.value() << std::endl;
-        reply.add_following(get_reply.value());
-      }
-    }
-
-    auto any_other = std::make_unique<google::protobuf::Any>();
-    any_other->PackFrom(reply);
-    return any_other;
+    // Packing in response
+    return packProfileResponse(user_follower, user_following);
   }
 
   if (result->second == "follow") {
-    std::cout << "Talking to kv_client_ regarding followRequest" << std::endl;
-
+    // Create the request
     FollowRequest request;
     payload.UnpackTo(&request);
 
@@ -122,27 +102,122 @@ std::unique_ptr<google::protobuf::Any> Func::event(
     // in the 'UserFollower' subtable, add B to the followers of A
     kv_client_.put(kUserFollower + request.to_follow(), request.username());
 
+    // Create and pack in response
     FollowReply response;
-    auto any = std::make_unique<google::protobuf::Any>();
+    auto any = new google::protobuf::Any();
     any->PackFrom(response);
     return any;
   }
 
   if (result->second == "warble") {
-    std::cout << "Talking to kv_client_ regarding warbleRequest" << std::endl;
+    // Create the request
     WarbleRequest request;
     payload.UnpackTo(&request);
 
-    WarbleReply reply = buildWarbleReplyFromRequest(request, latest_warble_id);
-    std::string warble_string;
-    reply.warble().SerializeToString(&warble_string);
-    kv_client_.put(kWarble + std::to_string(latest_warble_id), warble_string);
+    // add a Warble as its own parent and an actual parent (if specified)
+    int parent_id = std::stoi(request.parent_id());
+    kv_client_.put(kWarbleChildren + std::to_string(parent_id),
+                   std::to_string(latest_warble_id));
+    kv_client_.put(kWarbleChildren + std::to_string(latest_warble_id),
+                   std::to_string(latest_warble_id));
+
+    // add warble to kvstore
+    WarbleReply response =
+        buildWarbleReplyFromRequest(request, latest_warble_id);
+    postWarble(response.warble(), kv_client_);
 
     latest_warble_id++;
 
-    auto any = std::make_unique<google::protobuf::Any>();
-    any->PackFrom(reply);
+    auto any = new google::protobuf::Any();
+    any->PackFrom(response);
     return any;
+  }
+
+  if (result->second == "read") {
+    // Create the request
+    ReadRequest request;
+    payload.UnpackTo(&request);
+
+    // get child warble ids
+    int id = std::stoi(request.warble_id());
+    std::unordered_set<int> warble_thread;
+    retrieveThreadIds(id, warble_thread, kv_client_);
+
+    // use that to get the actual warble
+    return createAndPackReadResponse(warble_thread, kv_client_);
+  }
+
+  return nullptr;
+}
+
+void Func::postWarble(const warble::Warble &warb,
+                      KeyValueStoreClient &kv_client_) {
+  std::string warble_string;
+  warb.SerializeToString(&warble_string);
+  kv_client_.put(kWarblePost + std::to_string(latest_warble_id), warble_string);
+}
+
+google::protobuf::Any *Func::createAndPackReadResponse(
+    std::unordered_set<int> &warble_thread, KeyValueStoreClient &kv_client_) {
+  ReadReply response;
+
+  for (int warble_id : warble_thread) {
+    // should only return one but API specifies stream
+    std::vector<GetReply> warble_lookup =
+        kv_client_.get(kWarblePost + std::to_string(warble_id));
+    if (warble_lookup.size() != 0) {
+      continue;
+    }
+    for (GetReply get_reply : warble_lookup) {
+      std::string data = get_reply.value();
+      warble::Warble *my_warb = response.add_warbles();
+      my_warb->ParseFromString(data);
+    }
+  }
+
+  auto *any = new google::protobuf::Any();
+  any->PackFrom(response);
+  return any;
+}
+
+google::protobuf::Any *Func::packProfileResponse(
+    std::vector<kvstore::GetReply> &followers,
+    std::vector<kvstore::GetReply> &followings) {
+  ProfileReply response;
+
+  for (GetReply get_reply : followers) {
+    if (get_reply.value() != "") {
+      response.add_followers(get_reply.value());
+    }
+  }
+
+  for (GetReply get_reply : followings) {
+    if (get_reply.value() != "") {
+      response.add_following(get_reply.value());
+    }
+  }
+
+  auto *any = new google::protobuf::Any();
+  any->PackFrom(response);
+  return any;
+}
+
+void Func::retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,
+                             KeyValueStoreClient &kv_client_) {
+  std::vector<GetReply> warble_children_lookup =
+      kv_client_.get(kWarbleChildren + std::to_string(id));
+
+  if (warble_children_lookup.size() == 0) {
+    return;
+  }
+
+  for (GetReply get_reply : warble_children_lookup) {
+    int child_id = std::stoi(get_reply.value());
+    const bool is_in = (warble_thread.find(child_id) != warble_thread.end());
+    if (!is_in) {
+      warble_thread.insert(child_id);
+      retrieveThreadIds(child_id, warble_thread, kv_client_);
+    }
   }
 }
 

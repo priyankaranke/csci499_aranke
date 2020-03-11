@@ -12,8 +12,6 @@ KeyValueStoreClient::KeyValueStoreClient(std::shared_ptr<Channel> channel)
 void KeyValueStoreClient::put(const std::string& key,
                               const std::string& value) {
   // Data we are sending to the server.
-  std::cout << " reached KeyValueStoreClient's put call successfully ";
-
   PutRequest request;
   request.set_key(key);
   request.set_value(value);
@@ -40,9 +38,6 @@ void KeyValueStoreClient::put(const std::string& key,
 }
 
 std::vector<GetReply> KeyValueStoreClient::get(const std::string& key) {
-  std::cout << " reached KeyValueStoreClient's get call successfully ";
-  std::cout << " with key: " << key << std::endl;
-
   ClientContext context;
 
   std::shared_ptr<ClientReaderWriter<GetRequest, GetReply> > stream(

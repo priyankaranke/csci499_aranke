@@ -40,8 +40,8 @@ class Func {
   // and the appropriate Reply object is returned
 
   // TODO: check for valid event_type, payload pairs?
-  std::unique_ptr<google::protobuf::Any> event(
-      const EventType event_type, const google::protobuf::Any &payload);
+  google::protobuf::Any *event(const EventType event_type,
+                               google::protobuf::Any payload);
 
  private:
   // map of event_type -> function to be executed for that ID
@@ -52,4 +52,16 @@ class Func {
 
   warble::WarbleReply buildWarbleReplyFromRequest(
       warble::WarbleRequest &request, int id);
+
+  void postWarble(const warble::Warble &warb, KeyValueStoreClient &kv_client_);
+
+  void retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,
+                         KeyValueStoreClient &kv_client_);
+
+  google::protobuf::Any *packProfileResponse(
+      std::vector<kvstore::GetReply> &followers,
+      std::vector<kvstore::GetReply> &followings);
+
+  google::protobuf::Any *createAndPackReadResponse(
+      std::unordered_set<int> &warble_thread, KeyValueStoreClient &kv_client_);
 };

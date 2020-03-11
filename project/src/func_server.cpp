@@ -15,8 +15,7 @@ Status FuncServer::unhook(ServerContext* context, const UnhookRequest* request,
 
 Status FuncServer::event(ServerContext* context, const EventRequest* request,
                          EventReply* response) {
-  std::cout << " reached funcServer's event call successfully " << std::endl;
-  std::unique_ptr<google::protobuf::Any> func_response = func_.event(
+  google::protobuf::Any* func_response = func_.event(
       static_cast<Func::EventType>(request->event_type()), request->payload());
 
   if (!func_response) {
@@ -24,7 +23,7 @@ Status FuncServer::event(ServerContext* context, const EventRequest* request,
                         "StatusCode::NOT_FOUND: Function was likely unhooked "
                         "before being called");
   } else {
-    response->set_allocated_payload(func_response.release());
+    response->set_allocated_payload(func_response);
     return Status::OK;
   }
 }
