@@ -22,8 +22,13 @@ using function_constants::kReadId;
 using function_constants::kRegisteruserId;
 using function_constants::kWarbleId;
 
-DEFINE_bool(verbose, false, "Display program name before message");
-DEFINE_string(message, "Hello world!", "Message to print");
+DEFINE_string(registeruser, "", "Username to register");
+DEFINE_string(user, "", "Username");
+DEFINE_string(warble, "", "Warble text");
+DEFINE_string(reply, "", "Reply to Warble");
+DEFINE_string(follow, "", "User to follow");
+DEFINE_string(read, "", "Warble thread to read");
+DEFINE_bool(profile, false, "Retrieve user profile");
 
 const std::string kFuncClientPort = "localhost:50000";
 
@@ -43,6 +48,7 @@ void warblePost(const std::string& username, const std::string& text,
 void read(int warble_id, FuncClient& func_client, int event_type);
 
 void prettyPrintWarble(Warble warble);
+void printCorrectFlagCombos();
 
 // Here is where the user's command line inputs will be interpreted
 // and executed. Holds a FuncClient which talks to FuncServer
@@ -62,29 +68,47 @@ int main(int argc, char** argv) {
        {kProfileId, "profile"}});
 
   setup(func_client, function_map);
-  registeruser("priyank", func_client, kRegisteruserId);
-  follow("priyank", "barath", func_client, kFollowId);
-  follow("darth", "priyank", func_client, kFollowId);
-  follow("barath", "darth", func_client, kFollowId);
-  follow("tristan", "barath", func_client, kFollowId);
 
-  profile("priyank", func_client, kProfileId);
-  profile("barath", func_client, kProfileId);
-  profile("darth", func_client, kProfileId);
-  profile("tristan", func_client, kProfileId);
-  profile("nonexist", func_client, kProfileId);
+  // REGISTERUSER
+  if (FLAGS_registeruser != "" && FLAGS_user == "" && FLAGS_warble == "" &&
+      FLAGS_reply == "" && FLAGS_follow == "" && FLAGS_read == "" &&
+      FLAGS_profile == false) {
+    registeruser(FLAGS_registeruser, func_client, kRegisteruserId);
+  }
+  // (USER AND WARBLE) OR REPLY
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble != "" &&
+           FLAGS_follow == "" && FLAGS_read == "" && FLAGS_profile == false) {
+    // if parent ID is also specified
+    if (FLAGS_reply != "") {
+      warblePost(FLAGS_registeruser, FLAGS_warble, std::stoi(FLAGS_reply),
+                 func_client, kWarbleId);
+    } else {
+      warblePost(FLAGS_registeruser, FLAGS_warble, -1, func_client, kWarbleId);
+    }
+  }
+  // (USER AND FOLLOW)
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
+           FLAGS_reply == "" && FLAGS_follow != "" && FLAGS_read == "" &&
+           FLAGS_profile == false) {
+    follow(FLAGS_user, FLAGS_follow, func_client, kFollowId);
+  }
+  // (USER AND READ)
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
+           FLAGS_reply == "" && FLAGS_follow == "" && FLAGS_read != "" &&
+           FLAGS_profile == false) {
+    read(std::stoi(FLAGS_read), func_client, kReadId);
+  }
+  // (USER AND PROFILE)
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
+           FLAGS_reply == "" && FLAGS_follow == "" && FLAGS_read == "" &&
+           FLAGS_profile == true) {
+    profile(FLAGS_user, func_client, kProfileId);
+  }
+  // bad flag combination
+  else {
+    printCorrectFlagCombos();
+  }
 
-  warblePost("priyank", "priyank's first warble", -1, func_client, kWarbleId);
-  warblePost("barath", "barath's now on warble", 2, func_client, kWarbleId);
-  warblePost("darth", "darth's reply to priyank", 0, func_client, kWarbleId);
-  warblePost("priyank", "priyank responds to barath!", 2, func_client,
-             kWarbleId);
-
-  read(1, func_client, kReadId);
-  read(0, func_client, kReadId);
-  read(2, func_client, kReadId);
-
-  std::cout << FLAGS_message << std::endl;
   gflags::ShutDownCommandLineFlags();
   return 0;
 }
@@ -177,6 +201,30 @@ void warblePost(const std::string& username, const std::string& text,
   event_reply.payload().UnpackTo(&reply);
 
   prettyPrintWarble(reply.warble());
+}
+
+void printCorrectFlagCombos() {
+  std::cout << "Invalid flag combination! Try one of the following flag "
+               "combinations? "
+            << std::endl;
+  std::cout << "--registeruser <username>	Registers the given username"
+            << std::endl;
+  std::cout << "--user <username> --warble <warble text>	Logs in as the "
+               "given username and creates a new warble with the given text"
+            << std::endl;
+  std::cout << "--user <username> --reply <reply warble id>	Indicates that "
+               "the new warble is a reply to the given id"
+            << std::endl;
+  std::cout << "--user <username> --follow <username>		Starts "
+               "following the given username"
+            << std::endl;
+  std::cout << "--user <username> --read <warble id>		Reads the "
+               "warble thread starting at the given id"
+            << std::endl;
+  std::cout
+      << "--user <username> --profile			Gets the user’s "
+         "profile of following and followers"
+      << std::endl;
 }
 
 void prettyPrintWarble(Warble warble) {

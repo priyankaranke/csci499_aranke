@@ -49,7 +49,6 @@ std::vector<GetReply> KeyValueStoreClient::get(const std::string& key) {
     only_request.set_key(key);
     std::vector<GetRequest> requests{only_request};
     for (const GetRequest& req : requests) {
-      std::cout << "Sending message " << req.key() << std::endl;
       stream->Write(req);
     }
     stream->WritesDone();
@@ -58,7 +57,6 @@ std::vector<GetReply> KeyValueStoreClient::get(const std::string& key) {
   std::vector<GetReply> replies;
   GetReply reply;
   while (stream->Read(&reply)) {
-    std::cout << "Got message " << reply.value() << std::endl;
     replies.push_back(reply);
   }
 
