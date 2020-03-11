@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-# set the project name
 project(Warble)
 
 ########## HANDLE GRPC/PROTOCOL BUFFER STUFF ##########
@@ -26,6 +25,10 @@ include_directories(${PROTO_SRC_DIR})
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${PROTO_SRC_DIR} ${PROTOS})
 grpc_generate_cpp(GRPC_SRCS GRPC_HDRS ${PROTO_SRC_DIR} ${PROTOS})
+
+########## HANDLE GFLAGS ##########
+find_package (gflags REQUIRED)
+include_directories (${gflags_INCLUDE_DIR})
 
 ########## DEFINITIONS FOR THIS CMAKELIST FILE ##########
 
@@ -165,4 +168,5 @@ add_executable(warble_main
 
 target_link_libraries(warble_main
     func_client
+    gflags
 )

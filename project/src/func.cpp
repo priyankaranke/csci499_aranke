@@ -59,7 +59,6 @@ google::protobuf::Any *Func::event(const EventType event_type,
 
   // found a hooked function for the request, execute it
   if (result->second == "registeruser") {
-    // Create the request
     RegisteruserRequest request;
     payload.UnpackTo(&request);
     std::string user_follower_entry = kUserFollower + request.username();
@@ -77,7 +76,6 @@ google::protobuf::Any *Func::event(const EventType event_type,
   }
 
   if (result->second == "profile") {
-    // Create the request
     ProfileRequest request;
     payload.UnpackTo(&request);
 
@@ -92,7 +90,6 @@ google::protobuf::Any *Func::event(const EventType event_type,
   }
 
   if (result->second == "follow") {
-    // Create the request
     FollowRequest request;
     payload.UnpackTo(&request);
 
@@ -110,7 +107,6 @@ google::protobuf::Any *Func::event(const EventType event_type,
   }
 
   if (result->second == "warble") {
-    // Create the request
     WarbleRequest request;
     payload.UnpackTo(&request);
 
@@ -160,12 +156,11 @@ void Func::postWarble(const warble::Warble &warb,
 google::protobuf::Any *Func::createAndPackReadResponse(
     std::unordered_set<int> &warble_thread, KeyValueStoreClient &kv_client_) {
   ReadReply response;
-
   for (int warble_id : warble_thread) {
     // should only return one but API specifies stream
     std::vector<GetReply> warble_lookup =
         kv_client_.get(kWarblePost + std::to_string(warble_id));
-    if (warble_lookup.size() != 0) {
+    if (warble_lookup.size() == 0) {
       continue;
     }
     for (GetReply get_reply : warble_lookup) {
@@ -174,7 +169,6 @@ google::protobuf::Any *Func::createAndPackReadResponse(
       my_warb->ParseFromString(data);
     }
   }
-
   auto *any = new google::protobuf::Any();
   any->PackFrom(response);
   return any;

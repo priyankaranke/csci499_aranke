@@ -1,3 +1,4 @@
+#include <gflags/gflags.h>
 #include <time.h>
 
 #include "func_client.h"
@@ -21,6 +22,9 @@ using function_constants::kReadId;
 using function_constants::kRegisteruserId;
 using function_constants::kWarbleId;
 
+DEFINE_bool(verbose, false, "Display program name before message");
+DEFINE_string(message, "Hello world!", "Message to print");
+
 const std::string kFuncClientPort = "localhost:50000";
 
 // method that hooks all the needed warble functions on initialization of
@@ -43,6 +47,8 @@ void prettyPrintWarble(Warble warble);
 // Here is where the user's command line inputs will be interpreted
 // and executed. Holds a FuncClient which talks to FuncServer
 int main(int argc, char** argv) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
   FuncClient func_client(
       grpc::CreateChannel(kFuncClientPort, grpc::InsecureChannelCredentials()));
 
@@ -77,6 +83,9 @@ int main(int argc, char** argv) {
   read(1, func_client, kReadId);
   read(0, func_client, kReadId);
   read(2, func_client, kReadId);
+
+  std::cout << FLAGS_message << std::endl;
+  gflags::ShutDownCommandLineFlags();
   return 0;
 }
 
