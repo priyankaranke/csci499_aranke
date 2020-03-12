@@ -8,6 +8,14 @@
 #endif
 #include "key_value_store_client.h"
 
+namespace function_constants {
+const int kRegisteruserId = 1;
+const int kWarbleId = 2;
+const int kFollowId = 3;
+const int kReadId = 4;
+const int kProfileId = 5;
+}  // namespace function_constants
+
 // port Func's KeyValueStoreClient should connect to (where KeyValueStoreServer
 // is listening on)
 const std::string KV_CLIENT_PORT = "0.0.0.0:50001";
@@ -41,7 +49,7 @@ class Func {
 
   // TODO: check for valid event_type, payload pairs?
   google::protobuf::Any *event(const EventType event_type,
-                               google::protobuf::Any payload);
+                               google::protobuf::Any payload, Status &status);
 
  private:
   // map of event_type -> function to be executed for that ID
@@ -49,6 +57,20 @@ class Func {
   std::mutex mtx_;
 
   KeyValueStoreClient kv_client_;
+
+  warble::RegisteruserReply registeruserEvent(KeyValueStoreClient &kv_client_,
+                                              google::protobuf::Any &payload,
+                                              Status &status);
+
+  warble::FollowReply followEvent(KeyValueStoreClient &kv_client_,
+                                  google::protobuf::Any &payload,
+                                  Status &status);
+
+  google::protobuf::Any *warbleEvent(KeyValueStoreClient &kv_client_,
+                                     google::protobuf::Any &payload,
+                                     Status &status);
+
+  bool isInKv(const std::string &check_string, KeyValueStoreClient &kv_client_);
 
   warble::WarbleReply buildWarbleReplyFromRequest(
       warble::WarbleRequest &request, int id);
@@ -58,10 +80,11 @@ class Func {
   void retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,
                          KeyValueStoreClient &kv_client_);
 
-  google::protobuf::Any *packProfileResponse(
-      std::vector<kvstore::GetReply> &followers,
-      std::vector<kvstore::GetReply> &followings);
+  google::protobuf::Any *profileEvent(KeyValueStoreClient &kv_client_,
+                                      google::protobuf::Any &payload,
+                                      Status &status);
 
-  google::protobuf::Any *createAndPackReadResponse(
-      std::unordered_set<int> &warble_thread, KeyValueStoreClient &kv_client_);
+  google::protobuf::Any *readEvent(KeyValueStoreClient &kv_client_,
+                                   google::protobuf::Any &payload,
+                                   Status &status);
 };

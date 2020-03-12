@@ -16,7 +16,14 @@ using kvstore::PutRequest;
 using kvstore::RemoveReply;
 using kvstore::RemoveRequest;
 
-class KeyValueStoreClient {
+class Database {
+ public:
+  virtual void put(const std::string& key, const std::string& value) = 0;
+  virtual void remove(const std::string& key) = 0;
+  virtual std::vector<GetReply> get(const std::string& key) = 0;
+};
+
+class KeyValueStoreClient : protected Database {
  public:
   KeyValueStoreClient() = delete;
   KeyValueStoreClient(std::shared_ptr<Channel> channel);

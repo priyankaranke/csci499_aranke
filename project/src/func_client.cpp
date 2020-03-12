@@ -1,4 +1,5 @@
 #include "func_client.h"
+#include "warble.grpc.pb.h"
 
 FuncClient::FuncClient(std::shared_ptr<Channel> channel)
     : stub_(FuncService::NewStub(channel)) {}
@@ -80,6 +81,7 @@ EventReply FuncClient::event(const int event_type,
   } else {
     std::cout << status.error_code() << ": " << status.error_message()
               << std::endl;
+    std::cout << "Error: " << status.error_message() << std::endl;
   }
   return reply;
 }

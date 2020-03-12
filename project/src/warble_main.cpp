@@ -25,29 +25,25 @@ using function_constants::kWarbleId;
 DEFINE_string(registeruser, "", "Username to register");
 DEFINE_string(user, "", "Username");
 DEFINE_string(warble, "", "Warble text");
-DEFINE_string(reply, "", "Reply to Warble");
+DEFINE_int32(reply, -1, "Reply to Warble");
 DEFINE_string(follow, "", "User to follow");
-DEFINE_string(read, "", "Warble thread to read");
+DEFINE_int32(read, -1, "Warble thread to read");
 DEFINE_bool(profile, false, "Retrieve user profile");
 
 const std::string kFuncClientPort = "localhost:50000";
 
-// method that hooks all the needed warble functions on initialization of
-// FuncClient
-void setup(FuncClient& func_client,
-           const std::unordered_map<int, std::string>& function_map);
-
-void profile(const std::string& username, FuncClient& func_client,
-             int event_type);
+// Return reply objects in case client wants to access them/handle their memory
+ProfileReply profile(const std::string& username, FuncClient& func_client,
+                     int event_type);
 RegisteruserReply registeruser(const std::string& username,
                                FuncClient& func_client, int event_type);
-void follow(const std::string& username, const std::string& to_follow,
-            FuncClient& func_client, int event_type);
-void warblePost(const std::string& username, const std::string& text,
-                int parent_id, FuncClient& func_client, int event_type);
-void read(int warble_id, FuncClient& func_client, int event_type);
+FollowReply follow(const std::string& username, const std::string& to_follow,
+                   FuncClient& func_client, int event_type);
+WarbleReply warblePost(const std::string& username, const std::string& text,
+                       int parent_id, FuncClient& func_client, int event_type);
+ReadReply read(int warble_id, FuncClient& func_client, int event_type);
 
-void prettyPrintWarble(Warble warble);
+void prettyPrintWarble(const Warble& warble);
 void printCorrectFlagCombos();
 
 // Here is where the user's command line inputs will be interpreted
@@ -58,66 +54,107 @@ int main(int argc, char** argv) {
   FuncClient func_client(
       grpc::CreateChannel(kFuncClientPort, grpc::InsecureChannelCredentials()));
 
-  // if we need to expose hook requests to warble, we can simply add them to
-  // function_map as they come in
-  std::unordered_map<int, std::string> function_map(
-      {{kRegisteruserId, "registeruser"},
-       {kWarbleId, "warble"},
-       {kFollowId, "follow"},
-       {kReadId, "read"},
-       {kProfileId, "profile"}});
+  // Command line flag checking does preliminary checks like making sure fields
+  // are non-empty, that the right combinations of fields are specified
+  // together, that user is logged in (except in the case of registeruser)
+  // // REGISTERUSER
+  // if (FLAGS_registeruser != "" && FLAGS_user == "" && FLAGS_warble == "" &&
+  //     FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
+  //     FLAGS_profile == false) {
+  //   registeruser(FLAGS_registeruser, func_client, kRegisteruserId);
+  // }
+  // // (USER AND WARBLE) OR REPLY
+  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble != ""
+  // &&
+  //          FLAGS_follow == "" && FLAGS_read == -1 && FLAGS_profile == false
+  //          && FLAGS_reply >= 0)
+  //          {
+  //   warblePost(FLAGS_registeruser, FLAGS_warble, FLAGS_reply, func_client,
+  //              kWarbleId);
+  // }
+  // // (USER AND FOLLOW)
+  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == ""
+  // &&
+  //          FLAGS_reply == -1 && FLAGS_follow != "" && FLAGS_read == -1 &&
+  //          FLAGS_profile == false) {
+  //   follow(FLAGS_user, FLAGS_follow, func_client, kFollowId);
+  // }
+  // // (USER AND READ)
+  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == ""
+  // &&
+  //          FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read != -1 &&
+  //          FLAGS_profile == false) {
+  //   read(FLAGS_read, func_client, kReadId);
+  // }
+  // // (USER AND PROFILE)
+  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == ""
+  // &&
+  //          FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
+  //          FLAGS_profile == true) {
+  //   profile(FLAGS_user, func_client, kProfileId);
+  // }
+  // // bad flag combination
+  // else {
+  //   printCorrectFlagCombos();
+  // }
 
-  setup(func_client, function_map);
+  RegisteruserReply response =
+      registeruser("priyank", func_client, kRegisteruserId);
+  RegisteruserReply response_two =
+      registeruser("tristan", func_client, kRegisteruserId);
+  RegisteruserReply response_three =
+      registeruser("barath", func_client, kRegisteruserId);
+  RegisteruserReply response_four =
+      registeruser("darth", func_client, kRegisteruserId);
 
-  // REGISTERUSER
-  if (FLAGS_registeruser != "" && FLAGS_user == "" && FLAGS_warble == "" &&
-      FLAGS_reply == "" && FLAGS_follow == "" && FLAGS_read == "" &&
-      FLAGS_profile == false) {
-    registeruser(FLAGS_registeruser, func_client, kRegisteruserId);
-  }
-  // (USER AND WARBLE) OR REPLY
-  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble != "" &&
-           FLAGS_follow == "" && FLAGS_read == "" && FLAGS_profile == false) {
-    // if parent ID is also specified
-    if (FLAGS_reply != "") {
-      warblePost(FLAGS_registeruser, FLAGS_warble, std::stoi(FLAGS_reply),
-                 func_client, kWarbleId);
-    } else {
-      warblePost(FLAGS_registeruser, FLAGS_warble, -1, func_client, kWarbleId);
-    }
-  }
-  // (USER AND FOLLOW)
-  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
-           FLAGS_reply == "" && FLAGS_follow != "" && FLAGS_read == "" &&
-           FLAGS_profile == false) {
-    follow(FLAGS_user, FLAGS_follow, func_client, kFollowId);
-  }
-  // (USER AND READ)
-  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
-           FLAGS_reply == "" && FLAGS_follow == "" && FLAGS_read != "" &&
-           FLAGS_profile == false) {
-    read(std::stoi(FLAGS_read), func_client, kReadId);
-  }
-  // (USER AND PROFILE)
-  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
-           FLAGS_reply == "" && FLAGS_follow == "" && FLAGS_read == "" &&
-           FLAGS_profile == true) {
-    profile(FLAGS_user, func_client, kProfileId);
-  }
-  // bad flag combination
-  else {
-    printCorrectFlagCombos();
-  }
+  // User already registered
+  RegisteruserReply response_bad =
+      registeruser("priyank", func_client, kRegisteruserId);
+  // RegisteruserReply response_three =
+  //     registeruser("barath", func_client, kRegisteruserId);
+
+  FollowReply f1 = follow("priyank", "barath", func_client, kFollowId);
+  FollowReply f2 = follow("darth", "priyank", func_client, kFollowId);
+  FollowReply f3 = follow("barath", "darth", func_client, kFollowId);
+  FollowReply f4 = follow("tristan", "barath", func_client, kFollowId);
+
+  // Invalid users
+  FollowReply f5 = follow("nonexistent_user", "barath", func_client, kFollowId);
+  FollowReply f6 = follow("barath", "nonexistent_user", func_client, kFollowId);
+
+  profile("priyank", func_client, kProfileId);
+  profile("barath", func_client, kProfileId);
+  profile("darth", func_client, kProfileId);
+  profile("tristan", func_client, kProfileId);
+
+  // Bad stuff
+  profile("nonexist", func_client, kProfileId);
+
+  // User does not exist
+  WarbleReply wr_bad = warblePost("traingle", "priyank's first warble", 0,
+                                  func_client, kWarbleId);
+  // Warble reply ID does not exist
+  WarbleReply wr_bad_two = warblePost("priyank", "priyank's first warble", -10,
+                                      func_client, kWarbleId);
+
+  WarbleReply wr_zero = warblePost("priyank", "priyank's first warble", -1,
+                                   func_client, kWarbleId);
+  WarbleReply wr_one = warblePost("darth", "darth's reply to priyank", 0,
+                                  func_client, kWarbleId);
+  WarbleReply wr_two =
+      warblePost("barath", "barath's now on warble", 0, func_client, kWarbleId);
+  WarbleReply wr_three = warblePost("priyank", "priyank responds to barath!", 2,
+                                    func_client, kWarbleId);
+  WarbleReply wr_four =
+      warblePost("tristan", "the decider warble", 1, func_client, kWarbleId);
+
+  ReadReply r_one = read(1, func_client, kReadId);
+  ReadReply r_two = read(0, func_client, kReadId);
+  ReadReply r_three = read(2, func_client, kReadId);
+  ReadReply r_bad = read(10, func_client, kReadId);
 
   gflags::ShutDownCommandLineFlags();
   return 0;
-}
-
-void setup(FuncClient& func_client,
-           const std::unordered_map<int, std::string>& function_map) {
-  for (auto it : function_map) {
-    func_client.hook(it.first, it.second);
-  }
 }
 
 RegisteruserReply registeruser(const std::string& username,
@@ -132,62 +169,87 @@ RegisteruserReply registeruser(const std::string& username,
 
   EventReply event_reply = func_client.event(event_type, *any);
   RegisteruserReply response;
-
+  if (event_reply.has_payload()) {
+    event_reply.payload().UnpackTo(&response);
+  }
   return response;
 }
 
-void follow(const std::string& username, const std::string& to_follow,
-            FuncClient& func_client, int event_type) {
+FollowReply follow(const std::string& username, const std::string& to_follow,
+                   FuncClient& func_client, int event_type) {
   auto* any = new google::protobuf::Any();
-  FollowRequest fr;
-  fr.set_username(username);
-  fr.set_to_follow(to_follow);
-  any->PackFrom(fr);
-  EventReply follow_event_reply = func_client.event(event_type, *any);
+  FollowRequest request;
+  request.set_username(username);
+  request.set_to_follow(to_follow);
+  any->PackFrom(request);
+
+  EventReply event_reply = func_client.event(event_type, *any);
+  FollowReply response;
+
+  if (event_reply.has_payload()) {
+    event_reply.payload().UnpackTo(&response);
+  }
+  return response;
 }
 
-void read(int warble_id, FuncClient& func_client, int event_type) {
+ReadReply read(int warble_id, FuncClient& func_client, int event_type) {
   auto* any = new google::protobuf::Any();
   ReadRequest request;
   request.set_warble_id(std::to_string(warble_id));
   any->PackFrom(request);
 
   EventReply event_reply = func_client.event(event_type, *any);
-  ReadReply warble_reply;
-  event_reply.payload().UnpackTo(&warble_reply);
+  ReadReply reply;
 
-  // Print all of its children
-  for (const Warble& warble : warble_reply.warbles()) {
-    prettyPrintWarble(warble);
+  if (event_reply.has_payload()) {
+    event_reply.payload().UnpackTo(&reply);
+    // Print all of its children
+    for (const Warble& warble : reply.warbles()) {
+      prettyPrintWarble(warble);
+    }
   }
+  return reply;
 }
 
-void profile(const std::string& username, FuncClient& func_client,
-             int event_type) {
+ProfileReply profile(const std::string& username, FuncClient& func_client,
+                     int event_type) {
   auto* any = new google::protobuf::Any();
+  ProfileRequest request;
+  request.set_username(username);
+  any->PackFrom(request);
 
-  ProfileRequest pr;
-  pr.set_username(username);
-  any->PackFrom(pr);
+  EventReply event_reply = func_client.event(event_type, *any);
+  ProfileReply response;
 
-  EventReply other_event_reply = func_client.event(event_type, *any);
-  ProfileReply profile_reply;
-  other_event_reply.payload().UnpackTo(&profile_reply);
+  if (event_reply.has_payload()) {
+    event_reply.payload().UnpackTo(&response);
+    if (response.followers().size() == 0) {
+      std::cout << request.username() << " has no followers (yet)."
+                << std::endl;
+    } else {
+      std::cout << "Followers of " << request.username()
+                << " are:" << std::endl;
+      for (const std::string& f : response.followers()) {
+        std::cout << f << std::endl;
+      }
+    }
 
-  std::cout << "Followers of " << pr.username() << " are:" << std::endl;
-  for (const std::string& f : profile_reply.followers()) {
-    std::cout << f << std::endl;
+    if (response.following().size() == 0) {
+      std::cout << request.username() << " is not following anyone (yet)."
+                << std::endl;
+    } else {
+      std::cout << request.username() << " is following:" << std::endl;
+      for (const std::string& f : response.following()) {
+        std::cout << f << std::endl;
+      }
+    }
+    std::cout << std::endl;
   }
-
-  std::cout << pr.username() << " is following:" << std::endl;
-  for (const std::string& f : profile_reply.following()) {
-    std::cout << f << std::endl;
-  }
-  std::cout << std::endl;
+  return response;
 }
 
-void warblePost(const std::string& username, const std::string& text,
-                int parent_id, FuncClient& func_client, int event_type) {
+WarbleReply warblePost(const std::string& username, const std::string& text,
+                       int parent_id, FuncClient& func_client, int event_type) {
   auto* any = new google::protobuf::Any();
 
   WarbleRequest request;
@@ -197,10 +259,13 @@ void warblePost(const std::string& username, const std::string& text,
   any->PackFrom(request);
 
   EventReply event_reply = func_client.event(event_type, *any);
-  WarbleReply reply;
-  event_reply.payload().UnpackTo(&reply);
+  WarbleReply response;
 
-  prettyPrintWarble(reply.warble());
+  if (event_reply.has_payload()) {
+    event_reply.payload().UnpackTo(&response);
+    prettyPrintWarble(response.warble());
+  }
+  return response;
 }
 
 void printCorrectFlagCombos() {
@@ -227,7 +292,7 @@ void printCorrectFlagCombos() {
       << std::endl;
 }
 
-void prettyPrintWarble(Warble warble) {
+void prettyPrintWarble(const Warble& warble) {
   // Get time
   struct tm* tm;
   time_t t;

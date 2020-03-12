@@ -42,6 +42,7 @@ set(kv_SRCS
 # set key_value_store_client sources
 set(kv_client_SRCS
     key_value_store_client.cpp
+    database.h
     ${PROTO_SRCS}
     ${GRPC_SRCS}
 )

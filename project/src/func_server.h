@@ -40,6 +40,10 @@ class FuncServer final : public FuncService::Service {
   Status event(ServerContext* context, const EventRequest* request,
                EventReply* response) override;
 
+  // method that hooks all the needed warble functions on initialization of
+  // FuncClient
+  void setup();
+
  private:
   // Func performs the actual hooking, unhooking, event, maintenance of related
   // data structures
