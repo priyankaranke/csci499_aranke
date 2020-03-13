@@ -61,110 +61,39 @@ int main(int argc, char** argv) {
   // Command line flag checking does preliminary checks like making sure
   // fields are non-empty, that the right combinations of fields are specified
   // together, that user is logged in (except in the case of registeruser)
-  // // REGISTERUSER
-  // if (FLAGS_registeruser != "" && FLAGS_user == "" && FLAGS_warble == "" &&
-  //     FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
-  //     FLAGS_profile == false) {
-  //   registeruser(FLAGS_registeruser, func_client, kRegisteruserId);
-  // }
-  // // (USER AND WARBLE) OR REPLY
-  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble !=
-  // ""
-  // &&
-  //          FLAGS_follow == "" && FLAGS_read == -1 && FLAGS_profile == false
-  //          && FLAGS_reply >= 0)
-  //          {
-  //   warblePost(FLAGS_registeruser, FLAGS_warble, FLAGS_reply, func_client,
-  //              kWarbleId);
-  // }
-  // // (USER AND FOLLOW)
-  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble ==
-  // ""
-  // &&
-  //          FLAGS_reply == -1 && FLAGS_follow != "" && FLAGS_read == -1 &&
-  //          FLAGS_profile == false) {
-  //   follow(FLAGS_user, FLAGS_follow, func_client, kFollowId);
-  // }
-  // // (USER AND READ)
-  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble ==
-  // ""
-  // &&
-  //          FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read != -1 &&
-  //          FLAGS_profile == false) {
-  //   read(FLAGS_read, func_client, kReadId);
-  // }
-  // // (USER AND PROFILE)
-  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble ==
-  // ""
-  // &&
-  //          FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
-  //          FLAGS_profile == true) {
-  //   profile(FLAGS_user, func_client, kProfileId);
-  // }
-  // // bad flag combination
-  // else {
-  //   printCorrectFlagCombos();
-  // }
-
-  RegisteruserReply response =
-      registeruser("priyank", func_client, kRegisteruserId);
-  RegisteruserReply response_two =
-      registeruser("tristan", func_client, kRegisteruserId);
-  RegisteruserReply response_three =
-      registeruser("barath", func_client, kRegisteruserId);
-  RegisteruserReply response_four =
-      registeruser("darth", func_client, kRegisteruserId);
-
-  // User already registered
-  RegisteruserReply response_bad =
-      registeruser("priyank", func_client, kRegisteruserId);
-  // RegisteruserReply response_three =
-  //     registeruser("barath", func_client, kRegisteruserId);
-
-  FollowReply f1 = follow("priyank", "barath", func_client, kFollowId);
-  FollowReply f2 = follow("darth", "priyank", func_client, kFollowId);
-  FollowReply f3 = follow("barath", "darth", func_client, kFollowId);
-  FollowReply f4 = follow("tristan", "barath", func_client, kFollowId);
-  FollowReply f7 = follow("priyank", "barath", func_client, kFollowId);
-
-  // Invalid users
-  FollowReply f5 = follow("nonexistent_user", "barath", func_client, kFollowId);
-  FollowReply f6 = follow("barath", "nonexistent_user", func_client, kFollowId);
-
-  profile("priyank", func_client, kProfileId);
-  profile("barath", func_client, kProfileId);
-  profile("darth", func_client, kProfileId);
-  profile("tristan", func_client, kProfileId);
-
-  // Bad stuff
-  profile("nonexist", func_client, kProfileId);
-
-  // User does not exist
-  WarbleReply wr_bad = warblePost("traingle", "priyank's first warble", 0,
-                                  func_client, kWarbleId);
-  // Warble reply ID does not exist
-  WarbleReply wr_bad_two = warblePost("priyank", "priyank's first warble", -10,
-                                      func_client, kWarbleId);
-
-  WarbleReply wr_zero = warblePost("priyank", "priyank's first warble", -1,
-                                   func_client, kWarbleId);
-  WarbleReply wr_one = warblePost("darth", "darth's reply to priyank", 0,
-                                  func_client, kWarbleId);
-  WarbleReply wr_two =
-      warblePost("barath", "barath's now on warble", 0, func_client, kWarbleId);
-  WarbleReply wr_three = warblePost("priyank", "priyank responds to barath!", 2,
-                                    func_client, kWarbleId);
-  WarbleReply wr_four =
-      warblePost("tristan", "the decider warble", 1, func_client, kWarbleId);
-
-  WarbleReply wr_five =
-      warblePost("priyank", "here is number 5!", 4, func_client, kWarbleId);
-
-  ReadReply r_one = read(1, func_client, kReadId);
-  ReadReply r_two = read(0, func_client, kReadId);
-  ReadReply r_rep = read(4, func_client, kReadId);
-  ReadReply r_three = read(2, func_client, kReadId);
-  ReadReply r_bad = read(10, func_client, kReadId);
+  // REGISTERUSER
+  if (FLAGS_registeruser != "" && FLAGS_user == "" && FLAGS_warble == "" &&
+      FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
+      FLAGS_profile == false) {
+    registeruser(FLAGS_registeruser, func_client, kRegisteruserId);
+  }
+  // (USER AND WARBLE) OR REPLY
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble != "" &&
+           FLAGS_follow == "" && FLAGS_read == -1 && FLAGS_profile == false) {
+    warblePost(FLAGS_user, FLAGS_warble, FLAGS_reply, func_client, kWarbleId);
+  }
+  // (USER AND FOLLOW)
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
+           FLAGS_reply == -1 && FLAGS_follow != "" && FLAGS_read == -1 &&
+           FLAGS_profile == false) {
+    follow(FLAGS_user, FLAGS_follow, func_client, kFollowId);
+  }
+  // (USER AND READ)
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
+           FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read != -1 &&
+           FLAGS_profile == false) {
+    read(FLAGS_read, func_client, kReadId);
+  }
+  // (USER AND PROFILE)
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
+           FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
+           FLAGS_profile == true) {
+    profile(FLAGS_user, func_client, kProfileId);
+  }
+  // bad flag combination
+  else {
+    printCorrectFlagCombos();
+  }
 
   gflags::ShutDownCommandLineFlags();
   return 0;
