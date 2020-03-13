@@ -45,6 +45,9 @@ ReadReply read(int warble_id, FuncClient& func_client, int event_type);
 
 void prettyPrintWarble(const Warble& warble);
 void printCorrectFlagCombos();
+void renderWarbleThread(
+    const std::unordered_map<int, std::vector<int>>& warble_thread,
+    int warble_id, std::unordered_map<int, Warble>& warble_lookup);
 
 // Here is where the user's command line inputs will be interpreted
 // and executed. Holds a FuncClient which talks to FuncServer
@@ -54,8 +57,8 @@ int main(int argc, char** argv) {
   FuncClient func_client(
       grpc::CreateChannel(kFuncClientPort, grpc::InsecureChannelCredentials()));
 
-  // Command line flag checking does preliminary checks like making sure fields
-  // are non-empty, that the right combinations of fields are specified
+  // Command line flag checking does preliminary checks like making sure
+  // fields are non-empty, that the right combinations of fields are specified
   // together, that user is logged in (except in the case of registeruser)
   // // REGISTERUSER
   // if (FLAGS_registeruser != "" && FLAGS_user == "" && FLAGS_warble == "" &&
@@ -64,7 +67,8 @@ int main(int argc, char** argv) {
   //   registeruser(FLAGS_registeruser, func_client, kRegisteruserId);
   // }
   // // (USER AND WARBLE) OR REPLY
-  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble != ""
+  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble !=
+  // ""
   // &&
   //          FLAGS_follow == "" && FLAGS_read == -1 && FLAGS_profile == false
   //          && FLAGS_reply >= 0)
@@ -73,21 +77,24 @@ int main(int argc, char** argv) {
   //              kWarbleId);
   // }
   // // (USER AND FOLLOW)
-  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == ""
+  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble ==
+  // ""
   // &&
   //          FLAGS_reply == -1 && FLAGS_follow != "" && FLAGS_read == -1 &&
   //          FLAGS_profile == false) {
   //   follow(FLAGS_user, FLAGS_follow, func_client, kFollowId);
   // }
   // // (USER AND READ)
-  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == ""
+  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble ==
+  // ""
   // &&
   //          FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read != -1 &&
   //          FLAGS_profile == false) {
   //   read(FLAGS_read, func_client, kReadId);
   // }
   // // (USER AND PROFILE)
-  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == ""
+  // else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble ==
+  // ""
   // &&
   //          FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
   //          FLAGS_profile == true) {
@@ -178,8 +185,10 @@ RegisteruserReply registeruser(const std::string& username,
   EventReply event_reply = func_client.event(event_type, *any);
   RegisteruserReply response;
   if (event_reply.has_payload()) {
+    std::cout << "Registered user: " << username << std::endl;
     event_reply.payload().UnpackTo(&response);
   }
+  std::cout << "\n";
   return response;
 }
 
@@ -195,8 +204,11 @@ FollowReply follow(const std::string& username, const std::string& to_follow,
   FollowReply response;
 
   if (event_reply.has_payload()) {
+    std::cout << username << " successfully followed: " << to_follow
+              << std::endl;
     event_reply.payload().UnpackTo(&response);
   }
+  std::cout << "\n";
   return response;
 }
 
@@ -211,13 +223,39 @@ ReadReply read(int warble_id, FuncClient& func_client, int event_type) {
   ReadReply reply;
 
   if (event_reply.has_payload()) {
+    // create a map of warble and child warbles
+    std::unordered_map<int, std::vector<int>> warble_thread;
+    std::unordered_map<int, Warble> warble_lookup;
+
     event_reply.payload().UnpackTo(&reply);
-    // Print all of its children
+    // Generate ancestry tree
     for (const Warble& warble : reply.warbles()) {
-      prettyPrintWarble(warble);
+      warble_lookup[std::stoi(warble.id())] = warble;
+      if (std::stoi(warble.parent_id()) != -1) {
+        warble_thread[std::stoi(warble.parent_id())].push_back(
+            std::stoi(warble.id()));
+      }
     }
+    // Pretty print children recursively
+    prettyPrintWarble(warble_lookup[warble_id]);
+    renderWarbleThread(warble_thread, warble_id, warble_lookup);
   }
+  std::cout << "\n";
   return reply;
+}
+
+void renderWarbleThread(
+    const std::unordered_map<int, std::vector<int>>& warble_thread,
+    int warble_id, std::unordered_map<int, Warble>& warble_lookup) {
+  std::cout << " -- ";
+  std::unordered_map<int, std::vector<int>>::const_iterator it =
+      warble_thread.find(warble_id);
+  std::vector<int> children = it->second;
+  for (int child_id : children) {
+    Warble child_warble = warble_lookup[child_id];
+    prettyPrintWarble(child_warble);
+    renderWarbleThread(warble_thread, child_id, warble_lookup);
+  }
 }
 
 ProfileReply profile(const std::string& username, FuncClient& func_client,

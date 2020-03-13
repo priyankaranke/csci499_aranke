@@ -26,7 +26,7 @@ const std::string kWarbleChildren = "warble_children:";
 // keeps track of id of warbles posted
 int latest_warble_id = 0;
 
-Func::Func() {}
+Func::Func() { google::InitGoogleLogging(); }
 
 void Func::hook(const EventType &event_type,
                 const std::string &event_function) {
@@ -138,7 +138,19 @@ FollowReply Func::followEvent(Database &kv_client_,
                << std::endl;
     return response;
   }
-  // assumption that A following B again is not a problem
+  // if A already following B, do not readd
+  std::vector<GetReply> found_vec =
+      kv_client_.get(kUserFollowing + request.username());
+  for (GetReply get_reply : found_vec) {
+    if (get_reply.value() == request.to_follow()) {
+      status = grpc::Status(grpc::StatusCode::NOT_FOUND,
+                            "You are already "
+                            "following this user");
+      LOG(ERROR) << status.error_code() << ": " << status.error_message()
+                 << std::endl;
+      return response;
+    }
+  }
 
   // if (A) is to follow (B)
   // in the 'UserFollowing' subtable add A to the followers of B
