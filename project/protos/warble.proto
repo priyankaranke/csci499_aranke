@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package warble;
+
+// Time as given by Linux gettimeofday().
+message Timestamp {
+  int64 seconds = 1;  // Seconds since beginning of UNIX epoch.
+  int64 useconds = 2;  // Microseconds since beginning of UNIX epoch.
+}
+
+message Warble {
+  string username = 1;  // The user who posted this warble.
+  string text = 2;  // The contents of the warble.
+  bytes id = 3;  // The ID of this warble.
+  bytes parent_id = 4;  // The ID, if any, of the warble this is in reply to.
+  Timestamp timestamp = 5;  // The time this warble was posted.
+}
+
+message RegisteruserRequest {
+  string username = 1;
+}
+
+message RegisteruserReply {
+  // Empty because success/failure is signaled via GRPC status.
+}
+
+message WarbleRequest {
+  string username = 1;
+  string text = 2;  // The contents of the new warble to be posted.
+  bytes parent_id = 3;  // (optional) The ID of the warble this is in response to.
+}
+
+message WarbleReply {
+  Warble warble = 1;  // Returns the stored warble.
+}
+
+message FollowRequest {
+  string username = 1;
+  string to_follow = 2;  // The username of the other user to follow.
+}
+
+message FollowReply {
+  // Empty because success/failure is signaled via GRPC status.
+}
+
+message ReadRequest {
+  bytes warble_id = 1;  // The ID of the warble to start the read at.
+}
+
+message ReadReply {
+  repeated Warble warbles = 1;  // The requested warble thread.
+}
+
+message ProfileRequest {
+  string username = 1;
+}
+
+message ProfileReply {
+  repeated string followers = 1;
+  repeated string following = 2;
+}

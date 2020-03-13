@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package func;
+
+import "google/protobuf/any.proto";
+
+// Associates this type of event with the given function for future execution by Func.
+message HookRequest {
+  // An arbitrary int that is unique to this type of event
+  int32 event_type = 1;
+
+  // A string known to Func that represents a function that can process an event of type `event_type`
+  string event_function = 2;
+}
+
+message HookReply {
+  // Empty because success/failure is signaled via GRPC status.
+}
+
+// Unregisters an event of the given type, if registered.  Has no effect if already unregistered.
+message UnhookRequest {
+  int32 event_type = 1;
+}
+
+message UnhookReply {
+  // Empty because success/failure is signaled via GRPC status.
+}
+
+// Represents an arriving event of the given type with an arbitrary message payload.
+message EventRequest {
+  int32 event_type = 1;
+  google.protobuf.Any payload = 2;
+}
+
+// Represents an arbitrary message reply payload, if the event was not in error.
+message EventReply {
+  google.protobuf.Any payload = 1;
+}
+
+service FuncService {
+  rpc hook (HookRequest) returns (HookReply) {}
+  rpc unhook (UnhookRequest) returns (UnhookReply) {}
+  rpc event (EventRequest) returns (EventReply) {}
+}

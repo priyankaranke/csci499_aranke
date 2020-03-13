@@ -39,4 +39,17 @@ set_target_properties(libgmock PROPERTIES
 include_directories("${source_dir}/googletest/include"
                     "${source_dir}/googlemock/include")
 
-add_subdirectory(test_key_value_store)
+########### Run Tests ##########
+file(GLOB SRCS *.cpp)
+
+ADD_EXECUTABLE(all_tests ${SRCS})
+
+TARGET_LINK_LIBRARIES(all_tests
+    key_value_store
+    func
+    warble_functionality
+    libgtest
+)
+
+add_test(NAME all_tests
+         COMMAND all_tests)
