@@ -19,13 +19,18 @@ Status FuncServer::event(ServerContext* context, const EventRequest* request,
   // Internally signal different errors
   grpc::Status status;
   KeyValueStoreClient kv_client_(
-      grpc::CreateChannel(KV_CLIENT_PORT, grpc::InsecureChannelCredentials()));
+      grpc::CreateChannel(kKvClientPort, grpc::InsecureChannelCredentials()));
 
   google::protobuf::Any* func_response =
       func_.event(static_cast<Func::EventType>(request->event_type()),
                   request->payload(), status, kv_client_);
 
+  // status changed and func_response marked nullptr if in error
+  // could use std::optional instead
   if (!func_response) {
+    LOG(WARNING) << "func_response was null, request might not have gotten "
+                    "executed as expected"
+                 << std::endl;
     return grpc::Status(status.error_code(), status.error_message());
   } else {
     response->set_allocated_payload(func_response);

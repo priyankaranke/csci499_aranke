@@ -3,13 +3,9 @@
 #include <mutex>
 #include <unordered_map>
 
-#ifndef WARBLE_GRPC_PB_H
-#define WARBLE_GRPC_PB_H
-#include "warble.grpc.pb.h"
-#endif
-
 #include "database.h"
 #include "key_value_store.grpc.pb.h"
+#include "warble.grpc.pb.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -25,7 +21,7 @@ using kvstore::RemoveRequest;
 
 // port Func's KeyValueStoreClient should connect to (where KeyValueStoreServer
 // is listening on)
-const std::string KV_CLIENT_PORT = "0.0.0.0:50001";
+const std::string kKvClientPort = "0.0.0.0:50001";
 
 // General purpose Function as a Service that contains
 // logic of "func_server" to hook and unhook functions as well
@@ -53,7 +49,7 @@ class Func {
   //
   // if hooked to the event type, the appropriate function is then executed
   // and the appropriate Reply object is returned
-  google::protobuf::Any *event(const EventType event_type,
+  google::protobuf::Any *event(EventType event_type,
                                google::protobuf::Any payload, Status &status,
                                Database &kv_client_);
 
@@ -81,6 +77,7 @@ class Func {
 
   void postWarble(const warble::Warble &warb, Database &kv_client_);
 
+  // recursively gets warble children
   void retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,
                          Database &kv_client_);
 

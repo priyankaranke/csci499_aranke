@@ -42,7 +42,7 @@ class FuncServer final : public FuncService::Service {
                EventReply* response) override;
 
   // method that hooks all the needed warble functions on initialization of
-  // FuncClient
+  // Func
   void setup();
 
  private:

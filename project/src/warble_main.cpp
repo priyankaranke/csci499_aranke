@@ -157,6 +157,14 @@ int main(int argc, char** argv) {
   return 0;
 }
 
+// memory is allocated twice in the program: once on the server side for
+// google::protobuf::any messages and once on the client side for the same.
+// in both cases we use set_allocated, delegating the memory cleanup to
+// the google protobuf library.
+// we could instead copy the contents and manage the memory manually but
+// since it is done once on the client side and once on the server side
+// (no client is managing server allocated memory and vice versa), I
+// made the decision to let protobuf handle it
 RegisteruserReply registeruser(const std::string& username,
                                FuncClient& func_client, int event_type) {
   // no need to explicitly delete since we use set_allocated in func_client
@@ -192,6 +200,7 @@ FollowReply follow(const std::string& username, const std::string& to_follow,
   return response;
 }
 
+// Return a warble thread
 ReadReply read(int warble_id, FuncClient& func_client, int event_type) {
   auto* any = new google::protobuf::Any();
   ReadRequest request;

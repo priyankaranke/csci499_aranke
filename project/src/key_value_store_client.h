@@ -1,4 +1,4 @@
-// #include <glog/logging.h>
+#include <glog/logging.h>
 #include <grpcpp/grpcpp.h>
 
 #include "database.h"
@@ -22,7 +22,7 @@ class KeyValueStoreClient : public Database {
 
   void put(const std::string& key, const std::string& value) override;
   void remove(const std::string& key) override;
-  std::vector<GetReply> get(const std::string& key) override;
+  const std::vector<GetReply> get(const std::string& key) const override;
 
  private:
   std::unique_ptr<KeyValueStore::Stub> stub_;

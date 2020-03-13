@@ -27,17 +27,14 @@ void KeyValueStoreClient::put(const std::string& key,
   Status status = stub_->put(&context, request, &reply);
 
   // Act upon its status.
-  if (status.ok()) {
-    std::cout
-        << "PutReply was returned to Key Value store client with Status::OK"
-        << std::endl;
-  } else {
-    std::cout << status.error_code() << ": " << status.error_message()
-              << std::endl;
+  if (!status.ok()) {
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
   }
 }
 
-std::vector<GetReply> KeyValueStoreClient::get(const std::string& key) {
+const std::vector<GetReply> KeyValueStoreClient::get(
+    const std::string& key) const {
   ClientContext context;
 
   std::shared_ptr<ClientReaderWriter<GetRequest, GetReply> > stream(
@@ -63,7 +60,7 @@ std::vector<GetReply> KeyValueStoreClient::get(const std::string& key) {
   writer.join();
   Status status = stream->Finish();
   if (!status.ok()) {
-    std::cout << "kv_store_client get rpc failed." << std::endl;
+    LOG(ERROR) << "kv_store_client get rpc failed." << std::endl;
   }
   return replies;
 }
@@ -83,12 +80,8 @@ void KeyValueStoreClient::remove(const std::string& key) {
   Status status = stub_->remove(&context, request, &reply);
 
   // Act upon its status.
-  if (status.ok()) {
-    std::cout
-        << "RemoveReply was returned to Key Value store client with Status::OK"
-        << std::endl;
-  } else {
-    std::cout << status.error_code() << ": " << status.error_message()
-              << std::endl;
+  if (!status.ok()) {
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
   }
 }

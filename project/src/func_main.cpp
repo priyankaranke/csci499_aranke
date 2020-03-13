@@ -4,6 +4,8 @@
 void RunServer() {
   std::string server_address("0.0.0.0:50000");
   FuncServer service;
+
+  // perform hooking of all functions
   service.setup();
 
   ServerBuilder builder;

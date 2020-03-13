@@ -116,6 +116,7 @@ add_library(func STATIC
 target_link_libraries(func 
     gRPC::grpc++_reflection
     protobuf::libprotobuf
+    glog::glog
 )
 
 target_include_directories(func PUBLIC
@@ -146,7 +147,6 @@ add_executable(func_main
 target_link_libraries(func_main
     func
     warble_functionality
-    glog::glog
 )
 
 ########## EXPORT func_client AS LIBRARY ##########

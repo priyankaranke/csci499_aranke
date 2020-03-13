@@ -15,7 +15,8 @@ void FakeKeyValueStoreClient::remove(const std::string& key) {
   map_.erase(key);
 }
 
-std::vector<GetReply> FakeKeyValueStoreClient::get(const std::string& key) {
+const std::vector<GetReply> FakeKeyValueStoreClient::get(
+    const std::string& key) const {
   std::vector<GetReply> get_replies;
   std::vector<std::string> response;
 

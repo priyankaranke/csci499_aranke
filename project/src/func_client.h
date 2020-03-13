@@ -1,3 +1,6 @@
+#ifndef FUNC_CLIENT_H
+#define FUNC_CLIENT_H
+
 #include <grpcpp/grpcpp.h>
 #include <iostream>
 
@@ -29,10 +32,19 @@ class FuncClient {
   FuncClient(const FuncClient &) = delete;
 
   FuncClient(std::shared_ptr<Channel> channel);
+
+  // Allows a particular event_function to be called when incoming event_type
   void hook(const int event_type, const std::string &event_function);
+
+  // Removes the hooked event_function from attached event_type
   void unhook(const int event_type);
-  EventReply event(const int event_type, google::protobuf::Any &payload);
+
+  // Executes the function associated and returns a Reply object as payload
+  const EventReply event(const int event_type,
+                         google::protobuf::Any &payload) const;
 
  private:
   std::unique_ptr<FuncService::Stub> stub_;
 };
+
+#endif

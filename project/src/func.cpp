@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <sys/time.h>
 
 #include "func.h"
@@ -31,7 +32,7 @@ void Func::hook(const EventType &event_type,
                 const std::string &event_function) {
   mtx_.lock();
   function_map_[event_type] = event_function;
-  std::cout << "Inside func hook hooked " << event_type << " to "
+  LOG(INFO) << "Inside func hook hooked " << event_type << " to "
             << event_function << std::endl;
   mtx_.unlock();
 }
@@ -39,12 +40,12 @@ void Func::hook(const EventType &event_type,
 void Func::unhook(const EventType &event_type) {
   mtx_.lock();
   function_map_.erase(event_type);
-  std::cout << "Inside func hook unhooked " << event_type << std::endl;
+  LOG(INFO) << "Inside func hook unhooked " << event_type << std::endl;
   mtx_.unlock();
 }
 
 // // TODO: spawn new thread for every event call
-google::protobuf::Any *Func::event(const EventType event_type,
+google::protobuf::Any *Func::event(EventType event_type,
                                    google::protobuf::Any payload,
                                    grpc::Status &status, Database &kv_client_) {
   std::unordered_map<EventType, std::string>::const_iterator result =
@@ -53,6 +54,7 @@ google::protobuf::Any *Func::event(const EventType event_type,
   // no suitable function found; either event_type bogus or function was
   // unhooked or function not hooked to event_type yet
   if (result == function_map_.end()) {
+    LOG(WARNING) << "Function not found" << std::endl;
     return nullptr;
   }
 
@@ -85,6 +87,8 @@ google::protobuf::Any *Func::event(const EventType event_type,
   if (result->second == "read" && event_type == Func::EventType::Read) {
     return readEvent(kv_client_, payload, status);
   }
+  LOG(WARNING) << "Event type not found. Possible bad call by client"
+               << std::endl;
   status = grpc::Status(grpc::StatusCode::NOT_FOUND,
                         "Error: Problem with eventType.");
   return nullptr;
@@ -104,6 +108,8 @@ RegisteruserReply Func::registeruserEvent(Database &kv_client_,
     status = grpc::Status(grpc::StatusCode::ALREADY_EXISTS,
                           "User you are trying to "
                           "register already exists");
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
     return response;
   }
   // Put it into kv store into both user_follower and user_following subtables
@@ -128,6 +134,8 @@ FollowReply Func::followEvent(Database &kv_client_,
     status = grpc::Status(grpc::StatusCode::NOT_FOUND,
                           "User you are trying to "
                           "follow does not exist");
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
     return response;
   }
   // assumption that A following B again is not a problem
@@ -151,6 +159,8 @@ google::protobuf::Any *Func::warbleEvent(Database &kv_client_,
   // check that both the parent Warble (if specified) and the user exist
   if (!isInKv(kUserFollowing + request.username(), kv_client_)) {
     status = grpc::Status(grpc::StatusCode::NOT_FOUND, "User does not exist");
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
     return nullptr;
   }
 
@@ -160,6 +170,8 @@ google::protobuf::Any *Func::warbleEvent(Database &kv_client_,
     status = grpc::Status(grpc::StatusCode::NOT_FOUND,
                           "Warble you are trying to reply to"
                           " does not exist");
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
     return nullptr;
   }
 
@@ -207,6 +219,8 @@ google::protobuf::Any *Func::readEvent(Database &kv_client_,
   // check if thread id actually exists
   if (!isInKv(kWarblePost + request.warble_id(), kv_client_)) {
     status = grpc::Status(grpc::StatusCode::NOT_FOUND, "Warble does not exist");
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
     return nullptr;
   }
 
@@ -243,6 +257,8 @@ google::protobuf::Any *Func::profileEvent(Database &kv_client_,
   // check that user exists
   if (!isInKv(kUserFollowing + request.username(), kv_client_)) {
     status = grpc::Status(grpc::StatusCode::NOT_FOUND, "User does not exist");
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
     return nullptr;
   }
 

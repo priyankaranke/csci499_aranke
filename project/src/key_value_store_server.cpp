@@ -6,6 +6,7 @@ Status KeyValueStoreServer::put(ServerContext* context,
   if (put_success) {
     return Status::OK;
   } else {
+    LOG(ERROR) << "Put in KeyValueStoreServer failed" << std::endl;
     return Status::CANCELLED;
   }
 }

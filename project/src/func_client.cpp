@@ -1,3 +1,5 @@
+#include <glog/logging.h>
+
 #include "func_client.h"
 #include "warble.grpc.pb.h"
 
@@ -22,11 +24,11 @@ void FuncClient::hook(const int event_type, const std::string &event_function) {
 
   // Act upon its status.
   if (status.ok()) {
-    std::cout << "HookReply on HOOK was returned to FuncClient with Status::OK"
+    LOG(INFO) << "HookReply on HOOK was returned to FuncClient with Status::OK"
               << std::endl;
   } else {
-    std::cout << status.error_code() << ": " << status.error_message()
-              << std::endl;
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
   }
 }
 
@@ -47,17 +49,17 @@ void FuncClient::unhook(const int event_type) {
 
   // Act upon its status.
   if (status.ok()) {
-    std::cout
+    LOG(INFO)
         << "UnhookReply on UNHOOK was returned to FuncClient with Status::OK"
         << std::endl;
   } else {
-    std::cout << status.error_code() << ": " << status.error_message()
-              << std::endl;
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
   }
 }
 
-EventReply FuncClient::event(const int event_type,
-                             google::protobuf::Any &payload) {
+const EventReply FuncClient::event(const int event_type,
+                                   google::protobuf::Any &payload) const {
   // Data we are sending to the server.
   EventRequest request;
   request.set_event_type(event_type);
@@ -70,18 +72,13 @@ EventReply FuncClient::event(const int event_type,
   // the server and/or tweak certain RPC behaviors.
   ClientContext context;
 
-  std::cout << "Sending rpc for Event from func_client " << std::endl;
   // The actual RPC.
   Status status = stub_->event(&context, request, &reply);
 
   // Act upon its status.
-  if (status.ok()) {
-    std::cout << "Event was returned to FuncClient with Status::OK"
-              << std::endl;
-  } else {
-    std::cout << status.error_code() << ": " << status.error_message()
-              << std::endl;
-    std::cout << "Error: " << status.error_message() << std::endl;
+  if (!status.ok()) {
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
   }
   return reply;
 }
