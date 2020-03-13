@@ -47,7 +47,8 @@ void prettyPrintWarble(const Warble& warble);
 void printCorrectFlagCombos();
 void renderWarbleThread(
     const std::unordered_map<int, std::vector<int>>& warble_thread,
-    int warble_id, std::unordered_map<int, Warble>& warble_lookup);
+    int warble_id, std::unordered_map<int, Warble>& warble_lookup,
+    int num_call);
 
 // Here is where the user's command line inputs will be interpreted
 // and executed. Holds a FuncClient which talks to FuncServer
@@ -124,6 +125,7 @@ int main(int argc, char** argv) {
   FollowReply f2 = follow("darth", "priyank", func_client, kFollowId);
   FollowReply f3 = follow("barath", "darth", func_client, kFollowId);
   FollowReply f4 = follow("tristan", "barath", func_client, kFollowId);
+  FollowReply f7 = follow("priyank", "barath", func_client, kFollowId);
 
   // Invalid users
   FollowReply f5 = follow("nonexistent_user", "barath", func_client, kFollowId);
@@ -155,8 +157,12 @@ int main(int argc, char** argv) {
   WarbleReply wr_four =
       warblePost("tristan", "the decider warble", 1, func_client, kWarbleId);
 
+  WarbleReply wr_five =
+      warblePost("priyank", "here is number 5!", 4, func_client, kWarbleId);
+
   ReadReply r_one = read(1, func_client, kReadId);
   ReadReply r_two = read(0, func_client, kReadId);
+  ReadReply r_rep = read(4, func_client, kReadId);
   ReadReply r_three = read(2, func_client, kReadId);
   ReadReply r_bad = read(10, func_client, kReadId);
 
@@ -238,7 +244,7 @@ ReadReply read(int warble_id, FuncClient& func_client, int event_type) {
     }
     // Pretty print children recursively
     prettyPrintWarble(warble_lookup[warble_id]);
-    renderWarbleThread(warble_thread, warble_id, warble_lookup);
+    renderWarbleThread(warble_thread, warble_id, warble_lookup, 0);
   }
   std::cout << "\n";
   return reply;
@@ -246,15 +252,27 @@ ReadReply read(int warble_id, FuncClient& func_client, int event_type) {
 
 void renderWarbleThread(
     const std::unordered_map<int, std::vector<int>>& warble_thread,
-    int warble_id, std::unordered_map<int, Warble>& warble_lookup) {
-  std::cout << " -- ";
+    int warble_id, std::unordered_map<int, Warble>& warble_lookup,
+    int num_call) {
+  // keeps track of how many dashes to print
+  num_call++;
+
+  // look for child warbles
   std::unordered_map<int, std::vector<int>>::const_iterator it =
       warble_thread.find(warble_id);
+  if (it == warble_thread.end()) {
+    return;
+  }
+
+  // render their trees
   std::vector<int> children = it->second;
   for (int child_id : children) {
     Warble child_warble = warble_lookup[child_id];
+    for (int i = 0; i < num_call; i++) {
+      std::cout << "--";
+    }
     prettyPrintWarble(child_warble);
-    renderWarbleThread(warble_thread, child_id, warble_lookup);
+    renderWarbleThread(warble_thread, child_id, warble_lookup, num_call);
   }
 }
 
@@ -353,5 +371,5 @@ void prettyPrintWarble(const Warble& warble) {
   std::cout << warble.id() << " " << warble.username() << ": " << warble.text()
             << " (";
   printf("%s", time_buf);
-  std::cout << ")" << std::endl;
+  std::cout << ")" << std::endl << std::endl;
 }

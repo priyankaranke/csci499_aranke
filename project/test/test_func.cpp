@@ -166,6 +166,32 @@ TEST_F(FuncTest, TestFollowingUserWorks) {
   EXPECT_EQ((s_followed.find("priyank") != s_followed.end()), true);
 }
 
+TEST_F(FuncTest, TestRepeatFollowFails) {
+  Func::EventType event_type = Func::EventType::Follow;
+  grpc::Status status;
+
+  // prepare payload
+  auto* first_follow = new google::protobuf::Any();
+  FollowRequest request;
+
+  std::string username = "priyank";
+  std::string to_follow = "barath";
+  request.set_username(username);
+  request.set_to_follow(to_follow);
+  first_follow->PackFrom(request);
+
+  google::protobuf::Any* first_result =
+      func.event(event_type, *first_follow, status, fake_kv);
+
+  auto* second_follow = new google::protobuf::Any();
+  second_follow->PackFrom(request);
+  google::protobuf::Any* second_result =
+      func.event(event_type, *second_follow, status, fake_kv);
+
+  EXPECT_EQ(status.error_code(), 6);
+  EXPECT_EQ(status.error_message(), "You are already following this user");
+}
+
 TEST_F(FuncTest, TestProfilePopulatesAfterAFollow) {
   grpc::Status status;
 
