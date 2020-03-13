@@ -54,7 +54,10 @@ google::protobuf::Any *Func::event(EventType event_type,
   // no suitable function found; either event_type bogus or function was
   // unhooked or function not hooked to event_type yet
   if (result == function_map_.end()) {
-    LOG(WARNING) << "Function not found" << std::endl;
+    LOG(WARNING) << "Event type not found. Possible bad call by client"
+                 << std::endl;
+    status = grpc::Status(grpc::StatusCode::NOT_FOUND,
+                          "Error: Problem with eventType.");
     return nullptr;
   }
 
@@ -87,11 +90,6 @@ google::protobuf::Any *Func::event(EventType event_type,
   if (result->second == "read" && event_type == Func::EventType::Read) {
     return readEvent(kv_client_, payload, status);
   }
-  LOG(WARNING) << "Event type not found. Possible bad call by client"
-               << std::endl;
-  status = grpc::Status(grpc::StatusCode::NOT_FOUND,
-                        "Error: Problem with eventType.");
-  return nullptr;
 }
 
 RegisteruserReply Func::registeruserEvent(Database &kv_client_,

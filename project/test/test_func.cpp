@@ -116,6 +116,44 @@ TEST_F(FuncTest, TestPostingAndReadingWarbleWorks) {
   EXPECT_EQ((thread.find("1") != thread.end()), true);
 }
 
+TEST_F(FuncTest, UnhookingFunctionMakesRequestFail) {
+  Func::EventType event_type = Func::EventType::RegisterUser;
+  grpc::Status status;
+
+  func.unhook(event_type);
+
+  // prepare payload
+  auto* any = new google::protobuf::Any();
+  std::string username = "priyank";
+  RegisteruserRequest request;
+  request.set_username(username);
+  any->PackFrom(request);
+  google::protobuf::Any* result = func.event(event_type, *any, status, fake_kv);
+
+  EXPECT_EQ(status.error_code(), 5);
+  EXPECT_EQ(status.error_message(), "Error: Problem with eventType.");
+}
+
+TEST_F(FuncTest, HookingFunctionMakesRequestPass) {
+  Func::EventType event_type = Func::EventType::RegisterUser;
+  grpc::Status status;
+
+  func.unhook(event_type);
+  func.hook(event_type, "registeruser");
+
+  // prepare payload
+  auto* any = new google::protobuf::Any();
+  std::string username = "priyank";
+  RegisteruserRequest request;
+  request.set_username(username);
+  any->PackFrom(request);
+  google::protobuf::Any* result = func.event(event_type, *any, status, fake_kv);
+
+  EXPECT_EQ(status.error_code(), 6);
+  EXPECT_EQ(status.error_message(),
+            "User you are trying to register already exists");
+}
+
 TEST_F(FuncTest, RegisteringUserTwiceFails) {
   Func::EventType event_type = Func::EventType::RegisterUser;
   grpc::Status status;
