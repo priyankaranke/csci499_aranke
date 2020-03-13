@@ -1,3 +1,4 @@
+#include <grpcpp/grpcpp.h>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -6,15 +7,21 @@
 #define WARBLE_GRPC_PB_H
 #include "warble.grpc.pb.h"
 #endif
-#include "key_value_store_client.h"
 
-namespace function_constants {
-const int kRegisteruserId = 1;
-const int kWarbleId = 2;
-const int kFollowId = 3;
-const int kReadId = 4;
-const int kProfileId = 5;
-}  // namespace function_constants
+#include "database.h"
+#include "key_value_store.grpc.pb.h"
+
+using grpc::Channel;
+using grpc::ClientContext;
+using grpc::Status;
+
+using kvstore::GetReply;
+using kvstore::GetRequest;
+using kvstore::KeyValueStore;
+using kvstore::PutReply;
+using kvstore::PutRequest;
+using kvstore::RemoveReply;
+using kvstore::RemoveRequest;
 
 // port Func's KeyValueStoreClient should connect to (where KeyValueStoreServer
 // is listening on)
@@ -26,11 +33,11 @@ const std::string KV_CLIENT_PORT = "0.0.0.0:50001";
 class Func {
  public:
   enum EventType {
-    RegisterUser = 0,
-    Warble = 1,
-    Follow = 2,
-    Read = 3,
-    Profile = 4
+    RegisterUser = 1,
+    Warble = 2,
+    Follow = 3,
+    Read = 4,
+    Profile = 5
   };
 
   Func();
@@ -46,45 +53,42 @@ class Func {
   //
   // if hooked to the event type, the appropriate function is then executed
   // and the appropriate Reply object is returned
-
-  // TODO: check for valid event_type, payload pairs?
   google::protobuf::Any *event(const EventType event_type,
-                               google::protobuf::Any payload, Status &status);
+                               google::protobuf::Any payload, Status &status,
+                               Database &kv_client_);
 
  private:
   // map of event_type -> function to be executed for that ID
   std::unordered_map<EventType, std::string> function_map_;
   std::mutex mtx_;
 
-  KeyValueStoreClient kv_client_;
-
-  warble::RegisteruserReply registeruserEvent(KeyValueStoreClient &kv_client_,
+  warble::RegisteruserReply registeruserEvent(Database &kv_client_,
                                               google::protobuf::Any &payload,
                                               Status &status);
 
-  warble::FollowReply followEvent(KeyValueStoreClient &kv_client_,
+  warble::FollowReply followEvent(Database &kv_client_,
                                   google::protobuf::Any &payload,
                                   Status &status);
 
-  google::protobuf::Any *warbleEvent(KeyValueStoreClient &kv_client_,
+  google::protobuf::Any *warbleEvent(Database &kv_client_,
                                      google::protobuf::Any &payload,
                                      Status &status);
 
-  bool isInKv(const std::string &check_string, KeyValueStoreClient &kv_client_);
+  bool isInKv(const std::string &check_string, Database &kv_client_);
 
   warble::WarbleReply buildWarbleReplyFromRequest(
       warble::WarbleRequest &request, int id);
 
-  void postWarble(const warble::Warble &warb, KeyValueStoreClient &kv_client_);
+  void postWarble(const warble::Warble &warb, Database &kv_client_);
 
   void retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,
-                         KeyValueStoreClient &kv_client_);
+                         Database &kv_client_);
 
-  google::protobuf::Any *profileEvent(KeyValueStoreClient &kv_client_,
+  google::protobuf::Any *profileEvent(Database &kv_client_,
                                       google::protobuf::Any &payload,
                                       Status &status);
 
-  google::protobuf::Any *readEvent(KeyValueStoreClient &kv_client_,
+  google::protobuf::Any *readEvent(Database &kv_client_,
                                    google::protobuf::Any &payload,
                                    Status &status);
 };

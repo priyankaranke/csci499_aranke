@@ -42,7 +42,7 @@ set(kv_SRCS
 # set key_value_store_client sources
 set(kv_client_SRCS
     key_value_store_client.cpp
-    database.h
+    database.cpp
     ${PROTO_SRCS}
     ${GRPC_SRCS}
 )
@@ -50,6 +50,7 @@ set(kv_client_SRCS
 # set func sources
 set(func_SRCS
     func.cpp
+    key_value_store_client.cpp
     ${PROTO_SRCS}
     ${GRPC_SRCS}
 )
@@ -115,7 +116,6 @@ add_library(func STATIC
 target_link_libraries(func 
     gRPC::grpc++_reflection
     protobuf::libprotobuf
-    key_value_store_client
 )
 
 target_include_directories(func PUBLIC

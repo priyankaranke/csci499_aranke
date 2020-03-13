@@ -51,6 +51,7 @@ TARGET_LINK_LIBRARIES(all_tests
     key_value_store
     func
     warble_functionality
+    key_value_store_client
     libgtest
 )
 

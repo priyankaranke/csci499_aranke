@@ -4,6 +4,7 @@
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
+#include "database.h"
 #include "func.grpc.pb.h"
 #include "func.h"
 

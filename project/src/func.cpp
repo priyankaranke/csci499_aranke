@@ -25,9 +25,7 @@ const std::string kWarbleChildren = "warble_children:";
 // keeps track of id of warbles posted
 int latest_warble_id = 0;
 
-Func::Func()
-    : kv_client_(grpc::CreateChannel(KV_CLIENT_PORT,
-                                     grpc::InsecureChannelCredentials())) {}
+Func::Func() {}
 
 void Func::hook(const EventType &event_type,
                 const std::string &event_function) {
@@ -48,7 +46,7 @@ void Func::unhook(const EventType &event_type) {
 // // TODO: spawn new thread for every event call
 google::protobuf::Any *Func::event(const EventType event_type,
                                    google::protobuf::Any payload,
-                                   grpc::Status &status) {
+                                   grpc::Status &status, Database &kv_client_) {
   std::unordered_map<EventType, std::string>::const_iterator result =
       function_map_.find(event_type);
 
@@ -59,7 +57,8 @@ google::protobuf::Any *Func::event(const EventType event_type,
   }
 
   // found a hooked function for the request, execute it
-  if (result->second == "registeruser") {
+  if (result->second == "registeruser" &&
+      event_type == Func::EventType::RegisterUser) {
     RegisteruserReply response = registeruserEvent(kv_client_, payload, status);
     if (!status.ok()) {
       return nullptr;
@@ -68,10 +67,10 @@ google::protobuf::Any *Func::event(const EventType event_type,
     any->PackFrom(response);
     return any;
   }
-  if (result->second == "profile") {
+  if (result->second == "profile" && event_type == Func::EventType::Profile) {
     return profileEvent(kv_client_, payload, status);
   }
-  if (result->second == "follow") {
+  if (result->second == "follow" && event_type == Func::EventType::Follow) {
     FollowReply response = followEvent(kv_client_, payload, status);
     if (!status.ok()) {
       return nullptr;
@@ -80,16 +79,18 @@ google::protobuf::Any *Func::event(const EventType event_type,
     any->PackFrom(response);
     return any;
   }
-  if (result->second == "warble") {
+  if (result->second == "warble" && event_type == Func::EventType::Warble) {
     return warbleEvent(kv_client_, payload, status);
   }
-  if (result->second == "read") {
+  if (result->second == "read" && event_type == Func::EventType::Read) {
     return readEvent(kv_client_, payload, status);
   }
+  status = grpc::Status(grpc::StatusCode::NOT_FOUND,
+                        "Error: Problem with eventType.");
   return nullptr;
 }
 
-RegisteruserReply Func::registeruserEvent(KeyValueStoreClient &kv_client_,
+RegisteruserReply Func::registeruserEvent(Database &kv_client_,
                                           google::protobuf::Any &payload,
                                           Status &status) {
   RegisteruserRequest request;
@@ -112,7 +113,7 @@ RegisteruserReply Func::registeruserEvent(KeyValueStoreClient &kv_client_,
   return response;
 }
 
-FollowReply Func::followEvent(KeyValueStoreClient &kv_client_,
+FollowReply Func::followEvent(Database &kv_client_,
                               google::protobuf::Any &payload, Status &status) {
   FollowRequest request;
   payload.UnpackTo(&request);
@@ -140,7 +141,7 @@ FollowReply Func::followEvent(KeyValueStoreClient &kv_client_,
   return response;
 }
 
-google::protobuf::Any *Func::warbleEvent(KeyValueStoreClient &kv_client_,
+google::protobuf::Any *Func::warbleEvent(Database &kv_client_,
                                          google::protobuf::Any &payload,
                                          Status &status) {
   WarbleRequest request;
@@ -152,6 +153,7 @@ google::protobuf::Any *Func::warbleEvent(KeyValueStoreClient &kv_client_,
     status = grpc::Status(grpc::StatusCode::NOT_FOUND, "User does not exist");
     return nullptr;
   }
+
   // -1 is the default parent for all Warbles
   if (!isInKv(kWarblePost + request.parent_id(), kv_client_) &&
       std::stoi(request.parent_id()) != -1) {
@@ -180,8 +182,7 @@ google::protobuf::Any *Func::warbleEvent(KeyValueStoreClient &kv_client_,
   return any;
 }
 
-bool Func::isInKv(const std::string &check_string,
-                  KeyValueStoreClient &kv_client_) {
+bool Func::isInKv(const std::string &check_string, Database &kv_client_) {
   std::vector<GetReply> found_vec = kv_client_.get(check_string);
   if (found_vec.size() != 0) {
     return true;
@@ -190,14 +191,13 @@ bool Func::isInKv(const std::string &check_string,
   }
 }
 
-void Func::postWarble(const warble::Warble &warb,
-                      KeyValueStoreClient &kv_client_) {
+void Func::postWarble(const warble::Warble &warb, Database &kv_client_) {
   std::string warble_string;
   warb.SerializeToString(&warble_string);
   kv_client_.put(kWarblePost + std::to_string(latest_warble_id), warble_string);
 }
 
-google::protobuf::Any *Func::readEvent(KeyValueStoreClient &kv_client_,
+google::protobuf::Any *Func::readEvent(Database &kv_client_,
                                        google::protobuf::Any &payload,
                                        Status &status) {
   ReadRequest request;
@@ -234,7 +234,7 @@ google::protobuf::Any *Func::readEvent(KeyValueStoreClient &kv_client_,
   return any;
 }
 
-google::protobuf::Any *Func::profileEvent(KeyValueStoreClient &kv_client_,
+google::protobuf::Any *Func::profileEvent(Database &kv_client_,
                                           google::protobuf::Any &payload,
                                           Status &status) {
   ProfileRequest request;
@@ -270,7 +270,7 @@ google::protobuf::Any *Func::profileEvent(KeyValueStoreClient &kv_client_,
 }
 
 void Func::retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,
-                             KeyValueStoreClient &kv_client_) {
+                             Database &kv_client_) {
   std::vector<GetReply> warble_children_lookup =
       kv_client_.get(kWarbleChildren + std::to_string(id));
 
