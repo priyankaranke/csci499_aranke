@@ -39,6 +39,9 @@ set_target_properties(libgmock PROPERTIES
 include_directories("${source_dir}/googletest/include"
                     "${source_dir}/googlemock/include")
 
+set(PROTO_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/../src/protos/)
+include_directories(${PROTO_SRC_DIR})
+
 ########### Run Tests ##########
 file(GLOB SRCS *.cpp)
 
@@ -48,6 +51,7 @@ TARGET_LINK_LIBRARIES(all_tests
     key_value_store
     func
     warble_functionality
+    key_value_store_client
     libgtest
 )
 

@@ -1,8 +1,31 @@
-#include <google/protobuf/message.h>
-#include <any>
+#include <grpcpp/grpcpp.h>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+
+#ifndef WARBLE_GRPC_PB_H
+#define WARBLE_GRPC_PB_H
+#include "warble.grpc.pb.h"
+#endif
+
+#include "database.h"
+#include "key_value_store.grpc.pb.h"
+
+using grpc::Channel;
+using grpc::ClientContext;
+using grpc::Status;
+
+using kvstore::GetReply;
+using kvstore::GetRequest;
+using kvstore::KeyValueStore;
+using kvstore::PutReply;
+using kvstore::PutRequest;
+using kvstore::RemoveReply;
+using kvstore::RemoveRequest;
+
+// port Func's KeyValueStoreClient should connect to (where KeyValueStoreServer
+// is listening on)
+const std::string KV_CLIENT_PORT = "0.0.0.0:50001";
 
 // General purpose Function as a Service that contains
 // logic of "func_server" to hook and unhook functions as well
@@ -10,16 +33,16 @@
 class Func {
  public:
   enum EventType {
-    RegisterUser = 0,
-    Warble = 1,
-    Follow = 2,
-    Read = 3,
-    Profile = 4
+    RegisterUser = 1,
+    Warble = 2,
+    Follow = 3,
+    Read = 4,
+    Profile = 5
   };
 
   Func();
-  void hook(const EventType event_type, const std::string &event_function);
-  void unhook(const EventType event_type);
+  void hook(const EventType &event_type, const std::string &event_function);
+  void unhook(const EventType &event_type);
 
   // To use appropriately, for:
   // event_type 1 -> payload of type RegisterUserRequest is assumed
@@ -30,21 +53,42 @@ class Func {
   //
   // if hooked to the event type, the appropriate function is then executed
   // and the appropriate Reply object is returned
-
-  // TODO: check for valid event_type, payload pairs?
-  std::unique_ptr<google::protobuf::Message> event(
-      const EventType event_type, const std::any &payload) const;
+  google::protobuf::Any *event(const EventType event_type,
+                               google::protobuf::Any payload, Status &status,
+                               Database &kv_client_);
 
  private:
-  // method that hooks all the needed warble functions on initialization of Func
-  void setup();
-
   // map of event_type -> function to be executed for that ID
   std::unordered_map<EventType, std::string> function_map_;
   std::mutex mtx_;
 
-  // TODO: Add a private KeyValueStoreClient here that Func talks to
+  warble::RegisteruserReply registeruserEvent(Database &kv_client_,
+                                              google::protobuf::Any &payload,
+                                              Status &status);
 
-  // Test against an instance of KvStore not KeyValueStoreClient
-  // (testing everything but GRPC)
+  warble::FollowReply followEvent(Database &kv_client_,
+                                  google::protobuf::Any &payload,
+                                  Status &status);
+
+  google::protobuf::Any *warbleEvent(Database &kv_client_,
+                                     google::protobuf::Any &payload,
+                                     Status &status);
+
+  bool isInKv(const std::string &check_string, Database &kv_client_);
+
+  warble::WarbleReply buildWarbleReplyFromRequest(
+      warble::WarbleRequest &request, int id);
+
+  void postWarble(const warble::Warble &warb, Database &kv_client_);
+
+  void retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,
+                         Database &kv_client_);
+
+  google::protobuf::Any *profileEvent(Database &kv_client_,
+                                      google::protobuf::Any &payload,
+                                      Status &status);
+
+  google::protobuf::Any *readEvent(Database &kv_client_,
+                                   google::protobuf::Any &payload,
+                                   Status &status);
 };

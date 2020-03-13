@@ -4,7 +4,8 @@
 #include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
-#include "../protos/func.grpc.pb.h"
+#include "database.h"
+#include "func.grpc.pb.h"
 #include "func.h"
 
 using grpc::Server;
@@ -39,6 +40,10 @@ class FuncServer final : public FuncService::Service {
   // process the incoming event_id based on the function previously hooked
   Status event(ServerContext* context, const EventRequest* request,
                EventReply* response) override;
+
+  // method that hooks all the needed warble functions on initialization of
+  // FuncClient
+  void setup();
 
  private:
   // Func performs the actual hooking, unhooking, event, maintenance of related

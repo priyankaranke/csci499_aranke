@@ -11,7 +11,6 @@ bool KvStore::put(const std::string &key, const std::string &value) {
     map_[key] = new_vector;
   }
   map_[key].push_back(value);
-
   mtx_.unlock();
   // put was successful
   return true;
@@ -26,7 +25,6 @@ std::optional<std::vector<std::string>> KvStore::get(const std::string &key) {
     mtx_.unlock();
     return result->second;
   }
-
   mtx_.unlock();
   return {};
 }

@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 
+#include "fake_key_value_store.h"
 #include "func.h"
 
 // The fixture for testing class KeyValueStoreBackend.
@@ -21,5 +22,8 @@ class FuncTest : public ::testing::Test {
   // before the destructor).
   virtual void TearDown();
 
+  void registerAllUsers(const std::string& username);
+
   Func func;
+  FakeKeyValueStoreClient fake_kv;
 };

@@ -2,6 +2,7 @@ sudo apt-get update
 sudo apt-get -y install g++
 sudo apt-get -y install build-essential autoconf libtool pkg-config automake curl
 sudo apt-get -y install libgtest-dev
+sudo apt-get -y install libgflags-dev
 
 git clone -b $(curl -L https://grpc.io/release) https://github.com/grpc/grpc
 cd grpc
