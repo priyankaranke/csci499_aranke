@@ -1,5 +1,7 @@
 #include "key_value_store_server.h"
 
+const std::string kLatestWarbleString = "latest_warble_id:";
+
 Status KeyValueStoreServer::put(ServerContext* context,
                                 const PutRequest* request, PutReply* response) {
   bool put_success = kv_store_.put(request->key(), request->value());
@@ -36,4 +38,15 @@ Status KeyValueStoreServer::remove(ServerContext* context,
                                    RemoveReply* response) {
   kv_store_.remove(request->key());
   return Status::OK;
+}
+
+Status KeyValueStoreServer::setup() {
+  bool put_success = kv_store_.put(kLatestWarbleString, std::to_string(0));
+  if (put_success) {
+    std::cout << "Put 0 in kvstore" << std::endl;
+    return Status::OK;
+  } else {
+    LOG(ERROR) << "Put initial 0 in KeyValueStoreServer failed" << std::endl;
+    return Status::CANCELLED;
+  }
 }

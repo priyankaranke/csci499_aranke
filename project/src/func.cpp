@@ -23,8 +23,8 @@ const std::string kUserFollower = "user_follower:";
 const std::string kWarblePost = "warble_post:";
 const std::string kWarbleChildren = "warble_children:";
 
-// keeps track of id of warbles posted
-int latest_warble_id = 0;
+// prefix used to read and write latest warble from kvstore
+const std::string kLatestWarbleString = "latest_warble_id:";
 
 Func::Func() {}
 
@@ -44,7 +44,6 @@ void Func::unhook(const EventType &event_type) {
   mtx_.unlock();
 }
 
-// // TODO: spawn new thread for every event call
 google::protobuf::Any *Func::event(EventType event_type,
                                    google::protobuf::Any payload,
                                    grpc::Status &status, Database &kv_client_) {
@@ -185,8 +184,17 @@ google::protobuf::Any *Func::warbleEvent(Database &kv_client_,
     return nullptr;
   }
 
-  // add a Warble as its own parent (easier to retrieve thread) and an actual
-  // parent (if specified)
+  int latest_warble_id = getLatestWarbleId(kv_client_);
+  if (latest_warble_id == -1) {
+    status = grpc::Status(grpc::StatusCode::NOT_FOUND,
+                          "Couldn't get latest warble ID from kv store.");
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
+    return nullptr;
+  }
+
+  // add a Warble as its own parent (easier to retrieve thread) and an
+  // actual parent (if specified)
   int parent_id = std::stoi(request.parent_id());
   kv_client_.put(kWarbleChildren + std::to_string(parent_id),
                  std::to_string(latest_warble_id));
@@ -195,13 +203,31 @@ google::protobuf::Any *Func::warbleEvent(Database &kv_client_,
 
   // add warble to kvstore
   response = buildWarbleReplyFromRequest(request, latest_warble_id);
-  postWarble(response.warble(), kv_client_);
-  latest_warble_id++;
+  postWarble(response.warble(), kv_client_, latest_warble_id);
+  incrementLatestWarbleId(kv_client_);
 
   auto *any = new google::protobuf::Any();
   any->PackFrom(response);
 
   return any;
+}
+
+void Func::incrementLatestWarbleId(Database &kv_client_) {
+  int latest_warble_id = getLatestWarbleId(kv_client_);
+  latest_warble_id++;
+  kv_client_.remove(kLatestWarbleString);
+  kv_client_.put(kLatestWarbleString, std::to_string(latest_warble_id));
+}
+
+// reads the lastestWarbleId from kv store returns -INT32_MAX if in error
+int Func::getLatestWarbleId(const Database &kv_client_) const {
+  std::vector<GetReply> latest_id_lookup = kv_client_.get(kLatestWarbleString);
+
+  if (latest_id_lookup.size() == 0) {
+    return -1;
+  } else {
+    return std::stoi(latest_id_lookup[0].value());
+  }
 }
 
 bool Func::isInKv(const std::string &check_string, Database &kv_client_) {
@@ -213,7 +239,8 @@ bool Func::isInKv(const std::string &check_string, Database &kv_client_) {
   }
 }
 
-void Func::postWarble(const warble::Warble &warb, Database &kv_client_) {
+void Func::postWarble(const warble::Warble &warb, Database &kv_client_,
+                      int latest_warble_id) {
   std::string warble_string;
   warb.SerializeToString(&warble_string);
   kv_client_.put(kWarblePost + std::to_string(latest_warble_id), warble_string);

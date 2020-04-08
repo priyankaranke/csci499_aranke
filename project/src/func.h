@@ -58,6 +58,12 @@ class Func {
   std::unordered_map<EventType, std::string> function_map_;
   std::mutex mtx_;
 
+  // retrieves latest warble added recorded in kv store
+  int getLatestWarbleId(const Database &kv_client_) const;
+
+  // updates latestWarbleId on every new warble
+  void incrementLatestWarbleId(Database &kv_client_);
+
   warble::RegisteruserReply registeruserEvent(Database &kv_client_,
                                               google::protobuf::Any &payload,
                                               Status &status);
@@ -75,7 +81,8 @@ class Func {
   warble::WarbleReply buildWarbleReplyFromRequest(
       warble::WarbleRequest &request, int id);
 
-  void postWarble(const warble::Warble &warb, Database &kv_client_);
+  void postWarble(const warble::Warble &warb, Database &kv_client_,
+                  int latest_warble_id);
 
   // recursively gets warble children
   void retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,

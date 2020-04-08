@@ -5,6 +5,9 @@ void RunServer() {
   std::string server_address("0.0.0.0:50001");
   KeyValueStoreServer service;
 
+  // set the latest warble ID as 0
+  service.setup();
+
   ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
   builder.RegisterService(&service);

@@ -31,6 +31,8 @@ class KeyValueStoreServer final : public KeyValueStore::Service {
              ServerReaderWriter<GetReply, GetRequest>* stream) override;
   Status remove(ServerContext* context, const RemoveRequest* request,
                 RemoveReply* response) override;
+  // method that initializes the latest warble as 0
+  Status setup();
 
  private:
   KvStore kv_store_;
