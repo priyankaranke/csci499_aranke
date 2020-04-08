@@ -43,7 +43,6 @@ Status KeyValueStoreServer::remove(ServerContext* context,
 Status KeyValueStoreServer::setup() {
   bool put_success = kv_store_.put(kLatestWarbleString, std::to_string(0));
   if (put_success) {
-    std::cout << "Put 0 in kvstore" << std::endl;
     return Status::OK;
   } else {
     LOG(ERROR) << "Put initial 0 in KeyValueStoreServer failed" << std::endl;

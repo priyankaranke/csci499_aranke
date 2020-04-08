@@ -21,6 +21,8 @@ const std::string kWarbleChildren = "warble_children:";
 
 FuncTest::FuncTest() {
   fake_kv = FakeKeyValueStoreClient();
+  fake_kv.setup();
+
   std::unordered_map<int, std::string> function_map(
       {{Func::EventType::RegisterUser, "registeruser"},
        {Func::EventType::Warble, "warble"},

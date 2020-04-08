@@ -2,6 +2,8 @@
 
 #include "fake_key_value_store.h"
 
+const std::string kLatestWarbleString = "latest_warble_id:";
+
 void FakeKeyValueStoreClient::put(const std::string& key,
                                   const std::string& value) {
   if (map_.find(key) == map_.end()) {
@@ -32,4 +34,8 @@ const std::vector<GetReply> FakeKeyValueStoreClient::get(
     get_replies.push_back(reply);
   }
   return get_replies;
+}
+
+void FakeKeyValueStoreClient::setup() {
+  put(kLatestWarbleString, std::to_string(0));
 }
