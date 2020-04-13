@@ -1,8 +1,9 @@
 #include <iostream>
 
 #include "fake_key_value_store.h"
+#include "kv_tags.h"
 
-const std::string kLatestWarbleString = "latest_warble_id:";
+using kv_tags::kLatestWarbleString;
 
 void FakeKeyValueStoreClient::put(const std::string& key,
                                   const std::string& value) {

@@ -2,6 +2,7 @@
 #include <sys/time.h>
 
 #include "func.h"
+#include "kv_tags.h"
 
 using warble::FollowReply;
 using warble::FollowRequest;
@@ -16,15 +17,11 @@ using warble::Warble;
 using warble::WarbleReply;
 using warble::WarbleRequest;
 
-// Identifiers that specify which string is prepended to the key before adding
-// to key value store
-const std::string kUserFollowing = "user_following:";
-const std::string kUserFollower = "user_follower:";
-const std::string kWarblePost = "warble_post:";
-const std::string kWarbleChildren = "warble_children:";
-
-// prefix used to read and write latest warble from kvstore
-const std::string kLatestWarbleString = "latest_warble_id:";
+using kv_tags::kLatestWarbleString;
+using kv_tags::kUserFollower;
+using kv_tags::kUserFollowing;
+using kv_tags::kWarbleChildren;
+using kv_tags::kWarblePost;
 
 Func::Func() {}
 

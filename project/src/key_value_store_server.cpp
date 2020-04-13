@@ -1,6 +1,7 @@
 #include "key_value_store_server.h"
+#include "kv_tags.h"
 
-const std::string kLatestWarbleString = "latest_warble_id:";
+using kv_tags::kLatestWarbleString;
 
 Status KeyValueStoreServer::put(ServerContext* context,
                                 const PutRequest* request, PutReply* response) {
