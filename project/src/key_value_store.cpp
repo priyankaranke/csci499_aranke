@@ -34,12 +34,10 @@ KvStore::KvStore(const std::string &file_str) : filename(file_str) {
   std::string value;
   while ((pos = file_contents.find(delimiter)) != std::string::npos) {
     key = file_contents.substr(0, pos);
-    std::cout << "Inserting key: " << key << std::endl;
     file_contents.erase(0, pos + delimiter.length());
 
     pos = file_contents.find(delimiter);
     value = file_contents.substr(0, pos);
-    std::cout << "Inserting value: " << value << std::endl;
     file_contents.erase(0, pos + delimiter.length());
 
     put(key, value);
@@ -59,8 +57,6 @@ void KvStore::writeToFile() {
     std::string key = it.first;
     std::vector<std::string> values = it.second;
     for (auto value : values) {
-      std::cout << "Writing key: " << key << std::endl;
-      std::cout << "writing VALUE: " << value << std::endl;
       ofile << key << delimiter << value << delimiter;
     }
   }
