@@ -3,6 +3,9 @@
 
 using kv_tags::kLatestWarbleString;
 
+KeyValueStoreServer::KeyValueStoreServer(const std::string& filename)
+    : kv_store_(filename) {}
+
 Status KeyValueStoreServer::put(ServerContext* context,
                                 const PutRequest* request, PutReply* response) {
   bool put_success = kv_store_.put(request->key(), request->value());
@@ -42,11 +45,20 @@ Status KeyValueStoreServer::remove(ServerContext* context,
 }
 
 Status KeyValueStoreServer::setup() {
-  bool put_success = kv_store_.put(kLatestWarbleString, std::to_string(0));
-  if (put_success) {
-    return Status::OK;
-  } else {
-    LOG(ERROR) << "Put initial 0 in KeyValueStoreServer failed" << std::endl;
-    return Status::CANCELLED;
+  std::optional<std::vector<std::string>> response =
+      kv_store_.get(kLatestWarbleString);
+
+  // if latest warble is already in db, don't put it again
+  if (!response.has_value()) {
+    bool put_success = kv_store_.put(kLatestWarbleString, std::to_string(0));
+    if (put_success) {
+      return Status::OK;
+    } else {
+      LOG(ERROR) << "Put initial 0 in KeyValueStoreServer failed" << std::endl;
+      return Status::CANCELLED;
+    }
   }
+  return Status::OK;
 }
+
+void KeyValueStoreServer::writeToFile() { kv_store_.writeToFile(); }

@@ -20,5 +20,8 @@ class KeyValueStoreServerTest : public ::testing::Test {
   // before the destructor).
   virtual void TearDown();
 
+  // file that backs kv
+  std::string filename = "";
+
   KvStore kv;
 };
