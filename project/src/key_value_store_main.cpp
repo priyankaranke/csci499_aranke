@@ -41,5 +41,6 @@ int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   LOG(INFO) << "Starting Key Value Store Server " << std::endl;
   RunServer();
+  gflags::ShutDownCommandLineFlags();
   return 0;
 }

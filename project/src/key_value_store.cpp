@@ -2,7 +2,6 @@
 #include <glog/logging.h>
 #include <fstream>
 #include <iostream>
-#include <regex>
 
 // ASCII 176 is a good delimiter since it cannot be input
 // on a keyboard (before deploying our app, we should could prevent this
@@ -19,6 +18,7 @@ KvStore::KvStore(const std::string &file_str) : filename(file_str) {
 
   std::ifstream infile(filename);
   if (!infile.good()) {
+    LOG(INFO) << "File does not exist, creating file" << std::endl;
     std::ofstream outfile(filename);
     outfile.close();
   }
