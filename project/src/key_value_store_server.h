@@ -25,13 +25,22 @@ using kvstore::RemoveRequest;
 
 class KeyValueStoreServer final : public KeyValueStore::Service {
  public:
+  // prevent default constructor
+  KeyValueStoreServer() = delete;
+
+  // creates a kv_store_ backed by filename
+  KeyValueStoreServer(const std::string& filename);
+
   Status put(ServerContext* context, const PutRequest* request,
              PutReply* response) override;
   Status get(ServerContext* context,
              ServerReaderWriter<GetReply, GetRequest>* stream) override;
   Status remove(ServerContext* context, const RemoveRequest* request,
                 RemoveReply* response) override;
-
+  // method that initializes the latest warble as 0
+  Status setup(); 
+  // writes contents of map in kv_store_ to file. Called on SIGTERM
+  void writeToFile();
  private:
   KvStore kv_store_;
 };

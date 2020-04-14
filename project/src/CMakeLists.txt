@@ -74,6 +74,7 @@ add_library(key_value_store STATIC
 
 target_link_libraries(key_value_store 
     gRPC::grpc++_reflection
+    glog::glog
     protobuf::libprotobuf
 )
 

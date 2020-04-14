@@ -1,6 +1,9 @@
 #include <iostream>
 
 #include "fake_key_value_store.h"
+#include "kv_tags.h"
+
+using kv_tags::kLatestWarbleString;
 
 void FakeKeyValueStoreClient::put(const std::string& key,
                                   const std::string& value) {
@@ -32,4 +35,8 @@ const std::vector<GetReply> FakeKeyValueStoreClient::get(
     get_replies.push_back(reply);
   }
   return get_replies;
+}
+
+void FakeKeyValueStoreClient::setup() {
+  put(kLatestWarbleString, std::to_string(0));
 }

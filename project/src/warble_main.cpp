@@ -1,4 +1,5 @@
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 #include <time.h>
 
 #include "func_client.h"
@@ -54,6 +55,7 @@ void renderWarbleThread(
 // and executed. Holds a FuncClient which talks to FuncServer
 int main(int argc, char** argv) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
+  google::InitGoogleLogging(argv[0]);
 
   FuncClient func_client(
       grpc::CreateChannel(kFuncClientPort, grpc::InsecureChannelCredentials()));
