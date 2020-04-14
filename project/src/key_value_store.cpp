@@ -27,7 +27,6 @@ KvStore::KvStore(const std::string &file_str) : filename(file_str) {
   std::stringstream sstr;
   sstr << infile.rdbuf();
   std::string file_contents = sstr.str();
-  std::cout << file_contents << std::endl;
 
   size_t pos = 0;
   std::string key;
