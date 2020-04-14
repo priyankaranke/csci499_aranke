@@ -1,4 +1,7 @@
-<h1>Overview</h1>
+<h1> Class project for CSCI499 (Spring 2020) </h1>  
+
+<h2>Overview</h2>  
+
 <p> In this project you are to build the software infrastructure for a new Function-as-a-Service (FaaS) platform we’ll call  
 Func, and on top of Func build the infrastructure for a social network platform we’ll call Warble.  Func is intended to
 provide a very basic FaaS platform like AWS Lambda or Google Cloud Functions, and Warble is intended to have the same basic  
@@ -13,7 +16,7 @@ be able to reply to warbles (either their own or those of other users). </p>
 
 <p> Full design doc (https://docs.google.com/document/d/1TCxCbmyiO5mpiuvH8q9FZMXzt7nT2Drwecho8i3bW6g) </p>
 
-<h1>Build the project</h1>  
+<h2>Build the project</h2>    
 
 1. Create a new directory and clone csci499_aranke repo into that using  
 `git clone https://github.com/priyankaranke/csci499_aranke.git`  
@@ -46,7 +49,7 @@ cmake ..
 make  
 ```
 
-<h1>Run the app</h1>  
+<h2>Run the app</h2>  
 
 1. Open up 3 terminal windows  
 2. `vagrant ssh` into your machine on all  
@@ -54,5 +57,6 @@ make
 4. `./src/warble_main` in the third. This will be where you use Warble.  
 The command line will instruct you on correct usage of flags
 
-<h1>Run tests</h1>
+<h2>Run tests</h2>  
+
 <p> Run `./tests/all_tests` from within the same directory you ran make in (inside build) </p>
