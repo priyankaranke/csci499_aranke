@@ -60,4 +60,4 @@ The command line will instruct you on correct usage of flags
 
 <h2>Run tests</h2>  
 
-<p> Run `./tests/all_tests` from within the same directory you ran make in (inside build) </p>
+Run `./tests/all_tests` from within the same directory you ran make in (inside build)
