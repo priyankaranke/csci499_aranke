@@ -12,6 +12,8 @@ using warble::RegisteruserReply;
 using warble::RegisteruserRequest;
 using warble::WarbleReply;
 using warble::WarbleRequest;
+using warble::StreamReply;
+using warble::StreamRequest;
 
 // Identifiers that specify which string is prepended to the key before adding
 // to key value store
@@ -29,7 +31,8 @@ FuncTest::FuncTest() {
        {Func::EventType::Warble, "warble"},
        {Func::EventType::Follow, "follow"},
        {Func::EventType::Read, "read"},
-       {Func::EventType::Profile, "profile"}});
+       {Func::EventType::Profile, "profile"},
+       {Func::EventType::Stream, "stream"}});
   for (auto it : function_map) {
     func.hook(static_cast<Func::EventType>(it.first), it.second);
   }
@@ -65,19 +68,33 @@ void FuncTest::TearDown(){};
 // it is checked in command line arguments
 
 TEST_F(FuncTest, TestPostingAndReadingWarbleWorks) {
-  // Create and Post a Warble (id 0)
+  // Create and Post a Warble (id 0) with hashtag
   grpc::Status status;
   Func::EventType event_type = Func::EventType::Warble;
 
   auto* post_any = new google::protobuf::Any();
   WarbleRequest setup_request;
   setup_request.set_username("priyank");
-  setup_request.set_text("priyank's sample warble");
+  setup_request.set_text("#sample priyank's s#sample warble #sample2");
   setup_request.set_parent_id(std::to_string(-1));
   post_any->PackFrom(setup_request);
 
   google::protobuf::Any* setup_result =
       func.event(event_type, *post_any, status, fake_kv);
+
+  // Check the following key value pairs exist in the fake_kv:
+  // #sample -> 0
+  // #sample2 -> 0
+  // s#sample does not exist in the fake_kv
+  std::vector<GetReply> sample_get_replies = fake_kv.get("#sample");
+  std::vector<GetReply> sample2_get_replies = fake_kv.get("#sample2");
+  std::vector<GetReply> replies = fake_kv.get("s#sample");
+
+  EXPECT_EQ(sample_get_replies.size(), 1);
+  EXPECT_EQ(sample2_get_replies.size(), 1);
+  EXPECT_EQ(replies.size(), 0);
+  EXPECT_EQ(sample_get_replies[0].value(), "0");
+  EXPECT_EQ(sample2_get_replies[0].value(), "0");
 
   // Create and Post a reply warble
   auto* reply_any = new google::protobuf::Any();
@@ -117,6 +134,7 @@ TEST_F(FuncTest, TestPostingAndReadingWarbleWorks) {
 
   EXPECT_EQ((thread.find("0") != thread.end()), true);
   EXPECT_EQ((thread.find("1") != thread.end()), true);
+
 }
 
 TEST_F(FuncTest, UnhookingFunctionMakesRequestFail) {
@@ -394,4 +412,42 @@ TEST_F(FuncTest, TestReplyingToNonexistentWarbleIdFails) {
   EXPECT_EQ(status.error_code(), 5);
   EXPECT_EQ(status.error_message(),
             "Warble you are trying to reply to does not exist");
+}
+
+// test stream request by nonexistent user fails
+TEST_F(FuncTest, TestStreamWithNonExistentUserFails) {
+  Func::EventType event_type = Func::EventType::Stream;
+  grpc::Status status;
+
+  // prepare payload
+  auto* any = new google::protobuf::Any();
+  std::string username = "nonexistent";
+  StreamRequest request;
+  request.set_username(username);
+  any->PackFrom(request);
+
+  google::protobuf::Any* result = func.event(event_type, *any, status, fake_kv);
+  EXPECT_EQ(status.error_code(), 5);
+  EXPECT_EQ(status.error_message(), "User does not exist");
+}
+
+// test stream request works
+TEST_F(FuncTest, TestStreamRequestWorks) {
+  Func::EventType event_type = Func::EventType::Stream;
+  grpc::Status status;
+
+  // prepare payload
+  auto* any = new google::protobuf::Any();
+  std::string username = "priyank";
+  StreamRequest request;
+  request.set_username(username);
+  request.set_hashtag("#tag");
+  request.set_index(-1);
+  any->PackFrom(request);
+
+  google::protobuf::Any* result = func.event(event_type, *any, status, fake_kv);
+  StreamReply response;
+  result->UnpackTo(&response);
+  EXPECT_EQ(response.index(), 0);
+  EXPECT_EQ(response.warbles().empty(), true);
 }

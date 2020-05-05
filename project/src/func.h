@@ -47,6 +47,7 @@ class Func {
   // event_type 3 -> payload of type FollowRequest is assumed
   // event_type 4 -> payload of type ReadRequest is assumed
   // event_type 5 -> payload of type ProfileRequest is assumed
+  // event_type 6 -> payload of type StreamRequest is assumed
   //
   // if hooked to the event type, the appropriate function is then executed
   // and the appropriate Reply object is returned
