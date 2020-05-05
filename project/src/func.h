@@ -33,7 +33,8 @@ class Func {
     Warble = 2,
     Follow = 3,
     Read = 4,
-    Profile = 5
+    Profile = 5,
+    Stream = 6
   };
 
   Func();
@@ -84,6 +85,12 @@ class Func {
   void postWarble(const warble::Warble &warb, Database &kv_client_,
                   int latest_warble_id);
 
+  // parse all hash tags from warble text
+  std::unordered_set<std::string> parseTagsFromWarbleText(const std::string& text);
+
+  // update hashtag -> warble_id pair in the key value store
+  void addHashtagToKvStore(warble::WarbleRequest &request, Database &kv_client_, int id);
+
   // recursively gets warble children
   void retrieveThreadIds(int id, std::unordered_set<int> &warble_thread,
                          Database &kv_client_);
@@ -95,4 +102,6 @@ class Func {
   google::protobuf::Any *readEvent(Database &kv_client_,
                                    google::protobuf::Any &payload,
                                    Status &status);
+
+  google::protobuf::Any *streamEvent(Database &kv_client_, google::protobuf::Any &payload, Status &status);
 };

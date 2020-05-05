@@ -59,3 +59,14 @@ message ProfileReply {
   repeated string followers = 1;
   repeated string following = 2;
 }
+
+message StreamRequest {
+  string username = 1;
+  string hashtag = 2;
+  int64 index = 3; // remember the next warble index to put in the stream
+}
+
+message StreamReply {
+  int64 index = 1; // reply the next warble index to put in the stream
+  repeated Warble warbles = 2;
+}

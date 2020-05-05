@@ -24,6 +24,7 @@ const int kWarbleId = 2;
 const int kFollowId = 3;
 const int kReadId = 4;
 const int kProfileId = 5;
+const int kStreamId = 6;
 }  // namespace function_constants
 
 class FuncClient {

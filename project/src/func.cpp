@@ -1,5 +1,6 @@
 #include <glog/logging.h>
 #include <sys/time.h>
+#include <regex>
 
 #include "func.h"
 #include "kv_tags.h"
@@ -16,6 +17,8 @@ using warble::Timestamp;
 using warble::Warble;
 using warble::WarbleReply;
 using warble::WarbleRequest;
+using warble::StreamReply;
+using warble::StreamRequest;
 
 using kv_tags::kLatestWarbleString;
 using kv_tags::kUserFollower;
@@ -85,6 +88,9 @@ google::protobuf::Any *Func::event(EventType event_type,
   }
   if (result->second == "read" && event_type == Func::EventType::Read) {
     return readEvent(kv_client_, payload, status);
+  }
+  if (result->second == "stream" && event_type == Func::EventType::Stream) {
+    return streamEvent(kv_client_, payload, status);
   }
 }
 
@@ -201,12 +207,34 @@ google::protobuf::Any *Func::warbleEvent(Database &kv_client_,
   // add warble to kvstore
   response = buildWarbleReplyFromRequest(request, latest_warble_id);
   postWarble(response.warble(), kv_client_, latest_warble_id);
+  addHashtagToKvStore(request, kv_client_, latest_warble_id);
   incrementLatestWarbleId(kv_client_);
 
   auto *any = new google::protobuf::Any();
   any->PackFrom(response);
 
   return any;
+}
+
+std::unordered_set<std::string> Func::parseTagsFromWarbleText(const std::string& text) {
+  std::unordered_set<std::string> tags;
+  std::regex r("\\s+");
+  std::string sentence = std::regex_replace(text, r, std::string(1, char(176)));
+  std::stringstream ss(sentence);
+  std::string tag;
+  while (getline(ss, tag, char(176))) {
+    if (tag[0] == '#') {
+      tags.insert(tag);
+    }
+  }
+  return tags;
+}
+
+void Func::addHashtagToKvStore(warble::WarbleRequest &request, Database &kv_client_, int id) {
+  auto tags = parseTagsFromWarbleText(request.text());
+  for (const auto& tag: tags) {
+    kv_client_.put(tag, std::to_string(id));
+  }
 }
 
 void Func::incrementLatestWarbleId(Database &kv_client_) {
@@ -314,6 +342,39 @@ google::protobuf::Any *Func::profileEvent(Database &kv_client_,
     }
   }
 
+  auto *any = new google::protobuf::Any();
+  any->PackFrom(response);
+  return any;
+}
+
+// actually deal with stream request, called by func server
+google::protobuf::Any *Func::streamEvent(Database &kv_client_, google::protobuf::Any &payload, Status &status) {
+  StreamRequest request;
+  payload.UnpackTo(&request);
+
+  // check that user exists
+  if (!isInKv(kUserFollowing + request.username(), kv_client_)) {
+    status = grpc::Status(grpc::StatusCode::NOT_FOUND, "User does not exist");
+    LOG(ERROR) << status.error_code() << ": " << status.error_message()
+               << std::endl;
+    return nullptr;
+  }
+
+  // Get all warbles' ids associated with the hash tag from kv store
+  std::vector<GetReply> get_replies = kv_client_.get(request.hashtag());
+
+  StreamReply response;
+  if (request.index() != -1) {
+    for (size_t i = request.index(); i < get_replies.size(); ++i) {
+      const GetReply& get_reply = get_replies[i];
+      std::vector<GetReply> warble_lookup = kv_client_.get(kWarblePost + get_reply.value());
+      std::string data = warble_lookup[0].value();
+      warble::Warble *warble = response.add_warbles();
+      warble->ParseFromString(data);
+    }
+  }
+
+  response.set_index(get_replies.size());
   auto *any = new google::protobuf::Any();
   any->PackFrom(response);
   return any;

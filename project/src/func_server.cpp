@@ -46,7 +46,8 @@ void FuncServer::setup() {
        {Func::EventType::Warble, "warble"},
        {Func::EventType::Follow, "follow"},
        {Func::EventType::Read, "read"},
-       {Func::EventType::Profile, "profile"}});
+       {Func::EventType::Profile, "profile"},
+       {Func::EventType::Stream, "stream"}});
   for (auto it : function_map) {
     func_.hook(static_cast<Func::EventType>(it.first), it.second);
   }

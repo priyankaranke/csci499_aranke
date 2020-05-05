@@ -1,6 +1,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <time.h>
+#include <thread>
 
 #include "func_client.h"
 #include "warble.grpc.pb.h"
@@ -16,12 +17,15 @@ using warble::RegisteruserRequest;
 using warble::Warble;
 using warble::WarbleReply;
 using warble::WarbleRequest;
+using warble::StreamReply;
+using warble::StreamRequest;
 
 using function_constants::kFollowId;
 using function_constants::kProfileId;
 using function_constants::kReadId;
 using function_constants::kRegisteruserId;
 using function_constants::kWarbleId;
+using function_constants::kStreamId;
 
 DEFINE_string(registeruser, "", "Username to register");
 DEFINE_string(user, "", "Username");
@@ -30,6 +34,7 @@ DEFINE_int32(reply, -1, "Reply to Warble");
 DEFINE_string(follow, "", "User to follow");
 DEFINE_int32(read, -1, "Warble thread to read");
 DEFINE_bool(profile, false, "Retrieve user profile");
+DEFINE_string(stream, "", "Streams all new warbles containing ‘hashtag’");
 
 const std::string kFuncClientPort = "localhost:50000";
 
@@ -43,6 +48,7 @@ FollowReply follow(const std::string& username, const std::string& to_follow,
 WarbleReply warblePost(const std::string& username, const std::string& text,
                        int parent_id, FuncClient& func_client, int event_type);
 ReadReply read(int warble_id, FuncClient& func_client, int event_type);
+bool stream(StreamRequest& request, FuncClient& func_client, int event_type);
 
 void prettyPrintWarble(const Warble& warble);
 void printCorrectFlagCombos();
@@ -66,31 +72,45 @@ int main(int argc, char** argv) {
   // REGISTERUSER
   if (FLAGS_registeruser != "" && FLAGS_user == "" && FLAGS_warble == "" &&
       FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
-      FLAGS_profile == false) {
+      FLAGS_profile == false && FLAGS_stream == "") {
     registeruser(FLAGS_registeruser, func_client, kRegisteruserId);
   }
   // (USER AND WARBLE) OR REPLY
   else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble != "" &&
-           FLAGS_follow == "" && FLAGS_read == -1 && FLAGS_profile == false) {
+           FLAGS_follow == "" && FLAGS_read == -1 && FLAGS_profile == false && FLAGS_stream == "") {
     warblePost(FLAGS_user, FLAGS_warble, FLAGS_reply, func_client, kWarbleId);
   }
   // (USER AND FOLLOW)
   else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
            FLAGS_reply == -1 && FLAGS_follow != "" && FLAGS_read == -1 &&
-           FLAGS_profile == false) {
+           FLAGS_profile == false && FLAGS_stream == "") {
     follow(FLAGS_user, FLAGS_follow, func_client, kFollowId);
   }
   // (USER AND READ)
   else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
            FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read != -1 &&
-           FLAGS_profile == false) {
+           FLAGS_profile == false && FLAGS_stream == "") {
     read(FLAGS_read, func_client, kReadId);
   }
   // (USER AND PROFILE)
   else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
            FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
-           FLAGS_profile == true) {
+           FLAGS_profile == true && FLAGS_stream == "") {
     profile(FLAGS_user, func_client, kProfileId);
+  }
+  // (USER AND STREAM)
+  else if (FLAGS_registeruser == "" && FLAGS_user != "" && FLAGS_warble == "" &&
+           FLAGS_reply == -1 && FLAGS_follow == "" && FLAGS_read == -1 &&
+           FLAGS_profile == false && FLAGS_stream != "" && FLAGS_stream[0] == '#') {
+    std::chrono::milliseconds timespan(2000); // send stream request every 2 seconds
+    // if stream() returns false, it means user is not registered, break immediately
+    StreamRequest request;
+    request.set_username(FLAGS_user);
+    request.set_hashtag(FLAGS_stream);
+    request.set_index(-1); // index of a vector can never be -1, so -1 means this is the first stream request for a user and a tag
+    while (stream(request, func_client, kStreamId)) {
+      std::this_thread::sleep_for(timespan);
+    }
   }
   // bad flag combination
   else {
@@ -264,6 +284,24 @@ WarbleReply warblePost(const std::string& username, const std::string& text,
   return response;
 }
 
+bool stream(StreamRequest& request, FuncClient& func_client, int event_type) {
+  auto* any = new google::protobuf::Any();
+
+  StreamReply response;
+
+  any->PackFrom(request);
+  EventReply event_reply = func_client.event(event_type, *any);
+  if (event_reply.has_payload()) {
+    event_reply.payload().UnpackTo(&response);
+    request.set_index(response.index());
+    for (const Warble& warble : response.warbles()) {
+      prettyPrintWarble(warble);
+    }
+    return true;
+  }
+  return false;
+}
+
 void printCorrectFlagCombos() {
   std::cout << "Invalid flag combination! Try one of the following flag "
                "combinations? "
@@ -286,6 +324,8 @@ void printCorrectFlagCombos() {
       << "--user <username> --profile			Gets the user’s "
          "profile of following and followers"
       << std::endl;
+  std::cout << "--user <username> --stream '#tagname'		Streams all new warbles containing ‘hashtag’ "
+            << std::endl;
 }
 
 void prettyPrintWarble(const Warble& warble) {
