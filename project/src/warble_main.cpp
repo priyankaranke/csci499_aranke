@@ -284,6 +284,8 @@ WarbleReply warblePost(const std::string& username, const std::string& text,
   return response;
 }
 
+// send stream request out, return true if the user is legal, false otherwise
+// if the user is legal, we keep calling this function every 2 seconds until ctrl-c signal
 bool stream(StreamRequest& request, FuncClient& func_client, int event_type) {
   auto* any = new google::protobuf::Any();
 
